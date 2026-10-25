@@ -1,0 +1,1489 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>MeetCloud & LAN Studio v3 — PC & Smartphone (Video, Lavagna & Controllo Remoto)</title>
+  <!-- PeerJS per connessione WebRTC tra PC e Smartphone su reti diverse -->
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <!-- QRCode.js per inquadrare il link stanza dallo smartphone -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    :root {
+      --bg-dark: #0b0f19;
+      --bg-panel: #111827;
+      --bg-card: #1e293b;
+      --bg-hover: #334155;
+      --border: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --purple: #8b5cf6;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background: var(--bg-dark);
+      color: var(--text-main);
+      height: 100dvh;
+      width: 100vw;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* TOPBAR */
+    .topbar {
+      min-height: 58px;
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 14px;
+      gap: 10px;
+      z-index: 30;
+      flex-wrap: wrap;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 15px;
+    }
+
+    .brand-badge {
+      background: linear-gradient(135deg, var(--primary), var(--purple));
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);
+    }
+
+    .brand-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      padding: 5px 11px;
+      border-radius: 999px;
+      font-size: 11.5px;
+      font-weight: 600;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--warning);
+      box-shadow: 0 0 8px var(--warning);
+      flex-shrink: 0;
+    }
+    .dot.online {
+      background: var(--success);
+      box-shadow: 0 0 10px var(--success);
+    }
+
+    .room-bar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(30, 41, 59, 0.85);
+      border: 1px solid var(--border);
+      padding: 4px 8px;
+      border-radius: 10px;
+    }
+
+    .room-input {
+      background: var(--bg-dark);
+      border: 1px solid var(--border);
+      color: #fff;
+      padding: 5px 8px;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 13px;
+      width: 100px;
+      text-align: center;
+      letter-spacing: 0.5px;
+    }
+
+    .btn {
+      background: var(--bg-card);
+      color: var(--text-main);
+      border: 1px solid var(--border);
+      padding: 7px 11px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .btn:hover { background: var(--bg-hover); }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary { background: var(--primary); border-color: var(--primary); }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-success { background: var(--success); border-color: var(--success); color: #052e16; }
+    .btn-danger { background: var(--danger); border-color: var(--danger); }
+    .btn-purple { background: var(--purple); border-color: var(--purple); }
+
+    /* MAIN WORKSPACE */
+    .workspace {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* WHITEBOARD TOOLS */
+    .toolbar {
+      width: 62px;
+      background: var(--bg-panel);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 10px 6px;
+      gap: 7px;
+      z-index: 15;
+      overflow-y: auto;
+      flex-shrink: 0;
+    }
+
+    .tool-btn {
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.15s;
+    }
+    .tool-btn:hover { background: var(--bg-card); color: #fff; }
+    .tool-btn.active {
+      background: rgba(59, 130, 246, 0.22);
+      border-color: var(--primary);
+      color: #60a5fa;
+    }
+
+    .color-swatch {
+      width: 25px;
+      height: 25px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: transform 0.15s;
+    }
+    .color-swatch.active {
+      border-color: #fff;
+      transform: scale(1.18);
+    }
+
+    /* BOARD AREA */
+    .board-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: #0f172a;
+      position: relative;
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    .board-header {
+      min-height: 42px;
+      background: rgba(17, 24, 39, 0.92);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 4px 12px;
+      font-size: 12px;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .canvas-wrap {
+      flex: 1;
+      position: relative;
+      background: #ffffff;
+      margin: 10px;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+      overflow: hidden;
+      cursor: crosshair;
+      touch-action: none;
+    }
+
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+    }
+
+    /* REMOTE LASER POINTER */
+    .remote-cursor {
+      position: absolute;
+      pointer-events: none;
+      z-index: 15;
+      transform: translate(-50%, -50%);
+      display: none;
+    }
+    .remote-cursor-dot {
+      width: 14px;
+      height: 14px;
+      background: #ef4444;
+      border: 2px solid #fff;
+      border-radius: 50%;
+      box-shadow: 0 0 14px #ef4444;
+    }
+    .remote-cursor-label {
+      background: #ef4444;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      white-space: nowrap;
+      margin-top: 3px;
+    }
+
+    /* RIGHT SIDEBAR */
+    .sidebar {
+      width: 370px;
+      background: var(--bg-panel);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .video-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      background: #0d1322;
+      flex-shrink: 0;
+    }
+
+    .video-card {
+      position: relative;
+      background: #000;
+      border-radius: 10px;
+      overflow: hidden;
+      aspect-ratio: 16 / 10;
+      border: 1px solid var(--border);
+    }
+    .video-card video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .video-label {
+      position: absolute;
+      bottom: 5px;
+      left: 5px;
+      background: rgba(0, 0, 0, 0.75);
+      color: #fff;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 5px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      max-width: 92%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .media-controls-bar {
+      display: flex;
+      gap: 5px;
+      padding: 7px 10px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-dark);
+      flex-shrink: 0;
+      flex-wrap: wrap;
+    }
+
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-dark);
+      flex-shrink: 0;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 10px 4px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 11.5px;
+      font-weight: 700;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+    }
+    .tab-btn.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+      background: var(--bg-panel);
+    }
+
+    .tab-panel {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .tab-panel.active {
+      display: flex;
+    }
+
+    /* DEVICE CONTROL CARDS */
+    .device-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 11px;
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+    .device-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+    }
+    .device-title {
+      font-weight: 700;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .device-meta {
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+    .telemetry-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+    .t-badge {
+      background: rgba(15, 23, 42, 0.75);
+      border: 1px solid var(--border);
+      padding: 2px 7px;
+      border-radius: 6px;
+      font-size: 10.5px;
+      color: #cbd5e1;
+    }
+    .control-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    /* CHAT */
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-height: 120px;
+    }
+    .msg {
+      background: var(--bg-card);
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    .msg.me {
+      background: rgba(59, 130, 246, 0.22);
+      border: 1px solid rgba(59, 130, 246, 0.4);
+      align-self: flex-end;
+    }
+    .msg-author {
+      font-size: 10px;
+      color: var(--text-muted);
+      font-weight: 700;
+      margin-bottom: 2px;
+    }
+
+    /* MOBILE NAV */
+    .mobile-nav {
+      display: none;
+      height: 52px;
+      background: var(--bg-panel);
+      border-top: 1px solid var(--border);
+      z-index: 40;
+      flex-shrink: 0;
+    }
+    .mobile-nav-btn {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 700;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      cursor: pointer;
+    }
+    .mobile-nav-btn.active {
+      color: var(--primary);
+      background: rgba(59, 130, 246, 0.1);
+    }
+
+    /* MODAL */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.76);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 14px;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      max-width: 520px;
+      width: 100%;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.65);
+    }
+    .link-box {
+      background: var(--bg-dark);
+      border: 1px solid var(--border);
+      padding: 9px 11px;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 12px;
+      color: #60a5fa;
+      word-break: break-all;
+      user-select: text;
+    }
+    .qr-wrap {
+      background: #ffffff;
+      padding: 12px;
+      border-radius: 12px;
+      align-self: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .locked-banner {
+      background: rgba(239, 68, 68, 0.22);
+      border: 1px solid var(--danger);
+      color: #fca5a5;
+      padding: 3px 9px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      display: none;
+    }
+
+    @media (max-width: 900px) {
+      .brand-sub { display: none; }
+      .topbar { padding: 6px 10px; min-height: 50px; }
+      .workspace { flex-direction: column; }
+      .toolbar {
+        width: 100%;
+        height: 50px;
+        flex-direction: row;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+        padding: 4px 8px;
+        overflow-x: auto;
+        overflow-y: hidden;
+      }
+      .canvas-wrap { margin: 6px; }
+      .sidebar { width: 100%; border-left: none; flex: 1; display: none; }
+      .sidebar.mobile-open { display: flex; }
+      .board-container.mobile-hidden, .toolbar.mobile-hidden { display: none; }
+      .mobile-nav { display: flex; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-badge">📡</div>
+      <div>
+        <div>MeetCloud &amp; LAN Studio <span style="font-size:11px; color:#60a5fa;">v3</span></div>
+        <div class="brand-sub">PC + Smartphone • Video P2P, Lavagna Touch &amp; Controllo</div>
+      </div>
+    </div>
+
+    <div class="room-bar">
+      <span style="font-size:11.5px; color:var(--text-muted);">Stanza:</span>
+      <input id="roomInput" class="room-input" type="text" value="AULA-101" />
+      <button class="btn btn-primary" onclick="connectRoom()">⚡ Connetti</button>
+      <button class="btn btn-purple" onclick="openInviteModal()">📱 QR &amp; Link</button>
+    </div>
+
+    <div style="display:flex; align-items:center; gap:6px;">
+      <div class="status-pill">
+        <span id="connDot" class="dot"></span>
+        <span id="connText">Pronto (In attesa)</span>
+      </div>
+      <button class="btn btn-success" onclick="toggleSimDevice()" id="simBtn">🧪 Simula Smartphone</button>
+    </div>
+  </header>
+
+  <div class="workspace">
+    <aside class="toolbar" id="boardToolbar">
+      <button class="tool-btn active" data-tool="pen" onclick="setTool('pen')" title="Penna">✏️</button>
+      <button class="tool-btn" data-tool="highlighter" onclick="setTool('highlighter')" title="Evidenziatore">🖍️</button>
+      <button class="tool-btn" data-tool="laser" onclick="setTool('laser')" title="Laser">🔴</button>
+      <button class="tool-btn" data-tool="line" onclick="setTool('line')" title="Linea">📏</button>
+      <button class="tool-btn" data-tool="rect" onclick="setTool('rect')" title="Rettangolo">▭</button>
+      <button class="tool-btn" data-tool="circle" onclick="setTool('circle')" title="Cerchio">◯</button>
+      <button class="tool-btn" data-tool="text" onclick="setTool('text')" title="Testo">🔤</button>
+      <button class="tool-btn" data-tool="eraser" onclick="setTool('eraser')" title="Gomma">🧽</button>
+
+      <div class="color-swatch active" style="background:#1e293b;" onclick="setColor('#1e293b', this)"></div>
+      <div class="color-swatch" style="background:#ef4444;" onclick="setColor('#ef4444', this)"></div>
+      <div class="color-swatch" style="background:#2563eb;" onclick="setColor('#2563eb', this)"></div>
+      <div class="color-swatch" style="background:#16a34a;" onclick="setColor('#16a34a', this)"></div>
+      <div class="color-swatch" style="background:#d97706;" onclick="setColor('#d97706', this)"></div>
+      <div class="color-swatch" style="background:#9333ea;" onclick="setColor('#9333ea', this)"></div>
+
+      <button class="tool-btn" onclick="loadTemplate('cartesian')">📈</button>
+      <button class="tool-btn" onclick="loadTemplate('grid')">▦</button>
+      <button class="tool-btn" onclick="clearBoard(true)">🗑️</button>
+      <button class="tool-btn" onclick="downloadBoard()">💾</button>
+    </aside>
+
+    <main class="board-container" id="boardMain">
+      <div class="board-header">
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <span>📋 <strong>Lavagna Touch &amp; PC</strong></span>
+          <label style="display:flex; align-items:center; gap:5px; color:var(--text-muted);">
+            Tratto:
+            <input type="range" id="sizeRange" min="2" max="24" value="4" style="width:70px;" />
+          </label>
+          <span id="boardLockBanner" class="locked-banner">🔒 Lavagna bloccata</span>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:5px;">
+          <button class="btn" onclick="changePage(-1)">◀</button>
+          <span id="pageIndicator" style="font-weight:700; min-width:68px; text-align:center;">Pag. 1 / 5</span>
+          <button class="btn" onclick="changePage(1)">▶</button>
+        </div>
+      </div>
+
+      <div class="canvas-wrap" id="canvasWrap">
+        <canvas id="boardCanvas"></canvas>
+        <div id="remoteCursor" class="remote-cursor">
+          <div class="remote-cursor-dot"></div>
+          <div id="remoteCursorLabel" class="remote-cursor-label">Dispositivo 2</div>
+        </div>
+      </div>
+    </main>
+
+    <aside class="sidebar" id="rightSidebar">
+      <div class="video-grid">
+        <div class="video-card">
+          <video id="localVideo" autoplay muted playsinline webkit-playsinline></video>
+          <div class="video-label">
+            <span id="myDeviceIcon">💻</span> Tu (<span id="myRoleBadge">Host</span>)
+          </div>
+        </div>
+        <div class="video-card">
+          <video id="remoteVideo" autoplay playsinline webkit-playsinline></video>
+          <div class="video-label">
+            <span id="remoteVideoLabel">📡 In attesa 2° disp.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="media-controls-bar">
+        <button class="btn" style="flex:1;" id="btnMic" onclick="toggleLocalMic()">🎤 Mic</button>
+        <button class="btn" style="flex:1;" id="btnCam" onclick="toggleLocalCam()">📷 Cam</button>
+        <button class="btn" style="flex:1;" id="btnFlipCam" onclick="switchLocalCamera()" title="Cambia camera">🔄 Gira</button>
+        <button class="btn" style="flex:1;" onclick="shareLocalScreen()">🖥️ Schermo</button>
+      </div>
+
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('devices', this)">🎛️ Controllo (<span id="devCount">1</span>)</button>
+        <button class="tab-btn" onclick="switchTab('chat', this)">💬 Chat (<span id="unreadCount">0</span>)</button>
+        <button class="tab-btn" onclick="switchTab('manual', this)">🔌 Offline</button>
+      </div>
+
+      <div id="tab-devices" class="tab-panel active">
+        <div style="font-size:11.5px; color:var(--text-muted); line-height:1.4;">
+          Gestisci microfono, camera e lavagna del 2° dispositivo (Smartphone o PC).
+        </div>
+
+        <div class="device-card">
+          <div class="device-head">
+            <div class="device-title" id="localDevTitle">🟢 Questo Dispositivo (Tu)</div>
+            <span style="font-size:10.5px; background:rgba(59,130,246,0.2); color:#60a5fa; padding:2px 8px; border-radius:99px;">Attivo</span>
+          </div>
+          <div class="device-meta" id="localDeviceMeta">Inizializzazione webcam...</div>
+        </div>
+
+        <div class="device-card" id="remoteDeviceCard" style="opacity:0.68;">
+          <div class="device-head">
+            <div class="device-title" id="remoteDevTitle">⚪ 2° Dispositivo (Non connesso)</div>
+            <span id="remotePingBadge" style="font-size:11px; color:var(--text-muted);">-- ms</span>
+          </div>
+          <div class="device-meta" id="remoteDeviceMeta">
+            Inquadra il QR code o apri il link da smartphone.
+          </div>
+
+          <div class="telemetry-badges" id="remoteTelemetry">
+            <span class="t-badge" id="badgeType">Tipo: --</span>
+            <span class="t-badge" id="badgeCam">Cam: --</span>
+            <span class="t-badge" id="badgeBatt">Batteria: --</span>
+          </div>
+
+          <div class="control-grid">
+            <button class="btn" onclick="sendDeviceCommand('toggle-mic')" id="ctrlMicBtn">🎤 Mic ON/OFF</button>
+            <button class="btn" onclick="sendDeviceCommand('toggle-cam')" id="ctrlCamBtn">📷 Cam ON/OFF</button>
+            <button class="btn btn-primary" onclick="sendDeviceCommand('flip-cam')">🔄 Fronte/Retro</button>
+            <button class="btn" onclick="sendDeviceCommand('toggle-lock')" id="ctrlLockBtn">🔒 Blocca Lavagna</button>
+            <button class="btn" onclick="sendDeviceCommand('request-screen')">🖥️ Chiedi Schermo</button>
+            <button class="btn" onclick="sendDeviceCommand('sync-page')">📄 Allinea Pagina</button>
+            <button class="btn btn-purple" style="grid-column: span 2;" onclick="sendDeviceCommand('ring-bell')">🔔 Suona Dispositivo</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="tab-chat" class="tab-panel">
+        <div id="chatMessages" class="chat-messages">
+          <div class="msg">
+            <div class="msg-author">Sistema v3</div>
+            Pronti! Usa il QR code per collegare lo smartphone.
+          </div>
+        </div>
+        <div style="display:flex; gap:6px;">
+          <input id="chatInput" type="text" placeholder="Scrivi messaggio..." style="flex:1; background:var(--bg-dark); border:1px solid var(--border); color:#fff; padding:8px 10px; border-radius:8px;" onkeydown="if(event.key==='Enter') sendChat()" />
+          <button class="btn btn-primary" onclick="sendChat()">Invia</button>
+        </div>
+      </div>
+
+      <div id="tab-manual" class="tab-panel">
+        <div style="font-size:11.5px; color:var(--text-muted); line-height:1.4;">
+          Connessione manuale SDP 100% offline:
+        </div>
+        <button class="btn btn-primary" onclick="createManualOffer()">1. Genera Offerta</button>
+        <textarea id="sdpBox" rows="4" placeholder="Codice SDP..." style="width:100%; background:var(--bg-dark); color:#fff; border:1px solid var(--border); border-radius:8px; padding:8px; font-size:11px; font-family:monospace;"></textarea>
+        <div style="display:flex; gap:6px;">
+          <button class="btn" style="flex:1;" onclick="acceptManualOffer()">2. Accetta</button>
+          <button class="btn btn-success" style="flex:1;" onclick="acceptManualAnswer()">3. Conferma</button>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <nav class="mobile-nav">
+    <button class="mobile-nav-btn active" id="mNavBoard" onclick="setMobileView('board')">
+      <span style="font-size:16px;">📋</span>
+      <span>Lavagna</span>
+    </button>
+    <button class="mobile-nav-btn" id="mNavVideo" onclick="setMobileView('sidebar')">
+      <span style="font-size:16px;">📹</span>
+      <span>Video &amp; Controlli</span>
+    </button>
+    <button class="mobile-nav-btn" onclick="switchLocalCamera()">
+      <span style="font-size:16px;">🔄</span>
+      <span>Gira Cam</span>
+    </button>
+  </nav>
+
+  <div class="modal-backdrop" id="inviteModal">
+    <div class="modal">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h3 style="font-size:15.5px;">📱 Inquadra QR Code</h3>
+        <button class="btn" onclick="closeInviteModal()">✕</button>
+      </div>
+      <p style="font-size:12.5px; color:var(--text-muted);">
+        Inquadra questo QR code con la fotocamera dello smartphone per collegarti alla stanza:
+      </p>
+      <div class="qr-wrap">
+        <div id="qrcodeContainer"></div>
+      </div>
+      <div class="link-box" id="inviteLinkText"></div>
+      <div style="display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap;">
+        <button class="btn btn-success" onclick="shareWhatsApp()">📲 WhatsApp</button>
+        <button class="btn btn-primary" onclick="copyInviteLink()">📋 Copia Link</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const isMobileDevice = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+    let currentFacingMode = 'user';
+    let batteryLevelStr = 'N/D';
+
+    if (navigator.getBattery) {
+      navigator.getBattery().then(b => {
+        batteryLevelStr = Math.round(b.level * 100) + '%';
+      }).catch(() => {});
+    }
+
+    function setMobileView(view) {
+      const boardMain = document.getElementById('boardMain');
+      const boardToolbar = document.getElementById('boardToolbar');
+      const sidebar = document.getElementById('rightSidebar');
+      const mNavBoard = document.getElementById('mNavBoard');
+      const mNavVideo = document.getElementById('mNavVideo');
+
+      if (view === 'sidebar') {
+        boardMain.classList.add('mobile-hidden');
+        boardToolbar.classList.add('mobile-hidden');
+        sidebar.classList.add('mobile-open');
+        mNavBoard.classList.remove('active');
+        mNavVideo.classList.add('active');
+      } else {
+        boardMain.classList.remove('mobile-hidden');
+        boardToolbar.classList.remove('mobile-hidden');
+        sidebar.classList.remove('mobile-open');
+        mNavBoard.classList.add('active');
+        mNavVideo.classList.remove('active');
+        setTimeout(resizeCanvas, 60);
+      }
+    }
+
+    // Lavagna
+    const canvas = document.getElementById('boardCanvas');
+    const ctx = canvas.getContext('2d');
+    const wrap = document.getElementById('canvasWrap');
+
+    let currentTool = 'pen';
+    let currentColor = '#1e293b';
+    let isDrawing = false;
+    let startX = 0, startY = 0, lastX = 0, lastY = 0;
+    let currentPage = 0;
+    const totalPages = 5;
+    let pagesData = new Array(totalPages).fill(null);
+    let snapshot = null;
+    let boardLockedForMe = false;
+    let remoteBoardLocked = false;
+
+    function resizeCanvas() {
+      if (!wrap.clientWidth || !wrap.clientHeight) return;
+      const saved = pagesData[currentPage] || canvas.toDataURL();
+      canvas.width = wrap.clientWidth;
+      canvas.height = wrap.clientHeight;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      if (saved && saved.length > 100) {
+        const img = new Image();
+        img.onload = () => ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        img.src = saved;
+      }
+    }
+    window.addEventListener('resize', resizeCanvas);
+    setTimeout(resizeCanvas, 80);
+
+    function saveCurrentPage() {
+      if (canvas.width > 0 && canvas.height > 0) {
+        pagesData[currentPage] = canvas.toDataURL();
+      }
+    }
+
+    function changePage(delta, fromRemote = false) {
+      saveCurrentPage();
+      currentPage = Math.max(0, Math.min(totalPages - 1, currentPage + delta));
+      document.getElementById('pageIndicator').textContent = `Pag. ${currentPage + 1} / ${totalPages}`;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      if (pagesData[currentPage]) {
+        const img = new Image();
+        img.onload = () => ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        img.src = pagesData[currentPage];
+      }
+      if (!fromRemote) sendData({ type: 'page', page: currentPage });
+    }
+
+    function setTool(t) {
+      currentTool = t;
+      document.querySelectorAll('.tool-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.tool === t);
+      });
+    }
+
+    function setColor(c, el) {
+      currentColor = c;
+      document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+      if (el) el.classList.add('active');
+    }
+
+    function getNormPos(e) {
+      const rect = canvas.getBoundingClientRect();
+      const touch = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0]);
+      const clientX = touch ? touch.clientX : e.clientX;
+      const clientY = touch ? touch.clientY : e.clientY;
+      return {
+        x: Math.max(0, Math.min(1, (clientX - rect.left) / (rect.width || 1))),
+        y: Math.max(0, Math.min(1, (clientY - rect.top) / (rect.height || 1)))
+      };
+    }
+
+    function drawSegment(x0, y0, x1, y1, color, size, tool) {
+      ctx.save();
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      if (tool === 'eraser') {
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = size * 4;
+      } else if (tool === 'highlighter') {
+        ctx.strokeStyle = color;
+        ctx.globalAlpha = 0.28;
+        ctx.lineWidth = size * 3;
+      } else {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = size;
+      }
+      ctx.beginPath();
+      ctx.moveTo(x0 * canvas.width, y0 * canvas.height);
+      ctx.lineTo(x1 * canvas.width, y1 * canvas.height);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawShape(x0, y0, x1, y1, color, size, tool) {
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = size;
+      ctx.lineCap = 'round';
+      const sx = x0 * canvas.width, sy = y0 * canvas.height;
+      const ex = x1 * canvas.width, ey = y1 * canvas.height;
+
+      if (tool === 'line') {
+        ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.stroke();
+      } else if (tool === 'rect') {
+        ctx.strokeRect(sx, sy, ex - sx, ey - sy);
+      } else if (tool === 'circle') {
+        const r = Math.hypot(ex - sx, ey - sy);
+        ctx.beginPath(); ctx.arc(sx, sy, r, 0, Math.PI * 2); ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    canvas.addEventListener('mousedown', startDraw);
+    canvas.addEventListener('mousemove', moveDraw);
+    window.addEventListener('mouseup', endDraw);
+    canvas.addEventListener('touchstart', (e) => { e.preventDefault(); startDraw(e); }, { passive: false });
+    canvas.addEventListener('touchmove', (e) => { e.preventDefault(); moveDraw(e); }, { passive: false });
+    canvas.addEventListener('touchend', (e) => { e.preventDefault(); endDraw(e); }, { passive: false });
+
+    function startDraw(e) {
+      if (boardLockedForMe) return;
+      const pos = getNormPos(e);
+      if (currentTool === 'text') {
+        const txt = prompt('Inserisci testo o formula:');
+        if (txt) {
+          drawTextOnBoard(pos.x, pos.y, txt, currentColor);
+          sendData({ type: 'text', x: pos.x, y: pos.y, text: txt, color: currentColor });
+          saveCurrentPage();
+        }
+        return;
+      }
+      isDrawing = true;
+      startX = pos.x; startY = pos.y; lastX = pos.x; lastY = pos.y;
+      snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    }
+
+    function moveDraw(e) {
+      const pos = getNormPos(e);
+      lastX = pos.x; lastY = pos.y;
+      sendData({ type: 'cursor', x: pos.x, y: pos.y });
+
+      if (!isDrawing || boardLockedForMe) return;
+      const size = parseInt(document.getElementById('sizeRange').value, 10);
+
+      if (currentTool === 'laser') return;
+      if (['pen', 'highlighter', 'eraser'].includes(currentTool)) {
+        drawSegment(startX, startY, pos.x, pos.y, currentColor, size, currentTool);
+        sendData({ type: 'draw', x0: startX, y0: startY, x1: pos.x, y1: pos.y, color: currentColor, size, tool: currentTool });
+        startX = pos.x; startY = pos.y;
+      } else if (['line', 'rect', 'circle'].includes(currentTool)) {
+        ctx.putImageData(snapshot, 0, 0);
+        drawShape(startX, startY, pos.x, pos.y, currentColor, size, currentTool);
+      }
+    }
+
+    function endDraw() {
+      if (!isDrawing) return;
+      isDrawing = false;
+      const size = parseInt(document.getElementById('sizeRange').value, 10);
+      if (['line', 'rect', 'circle'].includes(currentTool)) {
+        sendData({ type: 'shape', x0: startX, y0: startY, x1: lastX, y1: lastY, color: currentColor, size, tool: currentTool });
+      }
+      saveCurrentPage();
+    }
+
+    function drawTextOnBoard(nx, ny, text, color) {
+      ctx.save();
+      ctx.fillStyle = color;
+      ctx.font = 'bold 20px Segoe UI, sans-serif';
+      ctx.fillText(text, nx * canvas.width, ny * canvas.height);
+      ctx.restore();
+    }
+
+    function clearBoard(emit = true) {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      saveCurrentPage();
+      if (emit) sendData({ type: 'clear' });
+    }
+
+    function loadTemplate(tpl, emit = true) {
+      clearBoard(false);
+      ctx.save();
+      const w = canvas.width, h = canvas.height;
+      ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 1;
+      for (let x = 0; x < w; x += 32) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
+      for (let y = 0; y < h; y += 32) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
+      if (tpl === 'cartesian') {
+        ctx.strokeStyle = '#334155'; ctx.lineWidth = 2.5;
+        ctx.beginPath(); ctx.moveTo(0, h/2); ctx.lineTo(w, h/2); ctx.moveTo(w/2, 0); ctx.lineTo(w/2, h); ctx.stroke();
+      }
+      ctx.restore();
+      saveCurrentPage();
+      if (emit) sendData({ type: 'template', tpl });
+    }
+
+    function downloadBoard() {
+      const a = document.createElement('a');
+      a.download = `lavagna-pagina-${currentPage + 1}.png`;
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+    }
+
+    // Fotocamera con Fallback Virtuale Robusto per evitare schermate nere
+    let localStream = null;
+    let micEnabled = true;
+    let camEnabled = true;
+
+    function createVirtualStream(label = 'Live Video', sub = 'WebRTC Attivo') {
+      const c = document.createElement('canvas');
+      c.width = 640; c.height = 400;
+      const g = c.getContext('2d');
+      let t = 0;
+      setInterval(() => {
+        t += 0.05;
+        g.fillStyle = '#0f172a';
+        g.fillRect(0, 0, c.width, c.height);
+        g.fillStyle = '#3b82f6';
+        g.beginPath();
+        g.arc(320 + Math.cos(t) * 70, 210 + Math.sin(t) * 40, 46, 0, Math.PI * 2);
+        g.fill();
+        g.fillStyle = '#ffffff';
+        g.font = 'bold 24px Segoe UI';
+        g.fillText(label, 24, 46);
+        g.fillStyle = '#94a3b8';
+        g.font = '18px Segoe UI';
+        g.fillText(sub, 24, 78);
+      }, 60);
+      return c.captureStream(20);
+    }
+
+    async function initLocalMedia(facing = 'user') {
+      currentFacingMode = facing;
+      try {
+        if (localStream) {
+          localStream.getVideoTracks().forEach(t => t.stop());
+        }
+        localStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: facing } },
+          audio: true
+        });
+        document.getElementById('localDeviceMeta').textContent = 'Webcam e Microfono attivi con successo';
+      } catch (err) {
+        console.warn('Webcam bloccata o assente, avvio stream virtuale di supporto:', err);
+        localStream = createVirtualStream(isMobileDevice ? 'Smartphone V3' : 'PC Host V3', 'Modalità Sicura WebRTC');
+        document.getElementById('localDeviceMeta').textContent = 'Camera virtuale attiva (Permessi cam non concessi o assenti)';
+      }
+
+      const lv = document.getElementById('localVideo');
+      lv.srcObject = localStream;
+      lv.play().catch(() => {});
+
+      document.getElementById('myDeviceIcon').textContent = isMobileDevice ? '📱' : '💻';
+      document.getElementById('localDevTitle').textContent = isMobileDevice ? '🟢 Smartphone (Tu)' : '🟢 PC Host (Tu)';
+
+      if (activeCall && activeCall.peerConnection && localStream.getVideoTracks()[0]) {
+        const sender = activeCall.peerConnection.getSenders().find(s => s.track && s.track.kind === 'video');
+        if (sender) sender.replaceTrack(localStream.getVideoTracks()[0]);
+      }
+      sendTelemetry();
+    }
+    initLocalMedia('user');
+
+    async function switchLocalCamera() {
+      const nextFacing = currentFacingMode === 'user' ? 'environment' : 'user';
+      await initLocalMedia(nextFacing);
+    }
+
+    function toggleLocalMic() {
+      micEnabled = !micEnabled;
+      if (localStream) localStream.getAudioTracks().forEach(t => t.enabled = micEnabled);
+      const b = document.getElementById('btnMic');
+      b.textContent = micEnabled ? '🎤 Mic' : '🔇 Off';
+      b.classList.toggle('btn-danger', !micEnabled);
+      sendTelemetry();
+    }
+
+    function toggleLocalCam() {
+      camEnabled = !camEnabled;
+      if (localStream) localStream.getVideoTracks().forEach(t => t.enabled = camEnabled);
+      const b = document.getElementById('btnCam');
+      b.textContent = camEnabled ? '📷 Cam' : '🚫 Off';
+      b.classList.toggle('btn-danger', !camEnabled);
+      sendTelemetry();
+    }
+
+    async function shareLocalScreen() {
+      try {
+        const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+        document.getElementById('localVideo').srcObject = screenStream;
+        if (activeCall && activeCall.peerConnection) {
+          const sender = activeCall.peerConnection.getSenders().find(s => s.track && s.track.kind === 'video');
+          if (sender) sender.replaceTrack(screenStream.getVideoTracks()[0]);
+        }
+        screenStream.getVideoTracks()[0].onended = () => initLocalMedia(currentFacingMode);
+      } catch (e) {
+        alert('Condivisione schermo annullata o non supportata dal browser.');
+      }
+    }
+
+    // PeerJS Cloud Connection
+    let peer = null;
+    let dataConn = null;
+    let activeCall = null;
+    let pingInterval = null;
+    let lastPingSent = 0;
+
+    function updateStatus(online, text) {
+      const dot = document.getElementById('connDot');
+      dot.classList.toggle('online', online);
+      document.getElementById('connText').textContent = text;
+    }
+
+    function connectRoom() {
+      const code = document.getElementById('roomInput').value.trim().toUpperCase().replace(/[^A-Z0-9-]/g, '') || 'AULA-101';
+      document.getElementById('roomInput').value = code;
+      if (peer) peer.destroy();
+
+      const hostId = `meetcloud-v3-${code}-host`;
+      updateStatus(false, `Connessione stanza ${code}...`);
+
+      peer = new Peer(hostId, {
+        config: {
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' },
+            { urls: 'stun:stun2.l.google.com:19302' }
+          ]
+        }
+      });
+
+      peer.on('open', () => {
+        document.getElementById('myRoleBadge').textContent = 'Host';
+        updateStatus(true, `Stanza ${code} pronta (In attesa 2° disp.)`);
+      });
+
+      peer.on('connection', (conn) => setupDataChannel(conn));
+
+      peer.on('call', (call) => {
+        call.answer(localStream);
+        setupMediaCall(call);
+      });
+
+      peer.on('error', (err) => {
+        if (err.type === 'unavailable-id') {
+          connectAsGuest(code, hostId);
+        } else {
+          updateStatus(false, `Stato: ${err.type}`);
+        }
+      });
+    }
+
+    function connectAsGuest(code, hostId) {
+      document.getElementById('myRoleBadge').textContent = isMobileDevice ? 'Smartphone' : 'Ospite';
+      peer = new Peer(undefined, {
+        config: {
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' }
+          ]
+        }
+      });
+
+      peer.on('open', () => {
+        const conn = peer.connect(hostId, { reliable: true });
+        setupDataChannel(conn);
+        const call = peer.call(hostId, localStream);
+        setupMediaCall(call);
+      });
+    }
+
+    function setupMediaCall(call) {
+      activeCall = call;
+      call.on('stream', (remoteStream) => {
+        const rv = document.getElementById('remoteVideo');
+        rv.srcObject = remoteStream;
+        rv.play().catch(() => {});
+      });
+    }
+
+    function sendTelemetry() {
+      sendData({
+        type: 'telemetry',
+        isMobile: isMobileDevice,
+        os: isMobileDevice ? (/iPhone|iPad/i.test(navigator.userAgent) ? 'iOS (iPhone/iPad)' : 'Android Smartphone') : (navigator.platform || 'Windows PC'),
+        cam: currentFacingMode === 'environment' ? 'Posteriore' : 'Frontale',
+        micOn: micEnabled,
+        camOn: camEnabled,
+        battery: batteryLevelStr
+      });
+    }
+
+    function setupDataChannel(conn) {
+      dataConn = conn;
+      conn.on('open', () => {
+        updateStatus(true, 'Connesso in tempo reale!');
+        document.getElementById('devCount').textContent = '2';
+        document.getElementById('remoteDeviceCard').style.opacity = '1';
+        sendTelemetry();
+
+        clearInterval(pingInterval);
+        pingInterval = setInterval(() => {
+          lastPingSent = performance.now();
+          sendData({ type: 'ping' });
+        }, 2500);
+      });
+
+      conn.on('data', handleIncomingData);
+      conn.on('close', () => {
+        updateStatus(false, '2° Dispositivo disconnesso');
+        document.getElementById('devCount').textContent = '1';
+      });
+    }
+
+    function sendData(payload) {
+      if (dataConn && dataConn.open) {
+        dataConn.send(payload);
+      }
+      if (manualChannel && manualChannel.readyState === 'open') {
+        manualChannel.send(JSON.stringify(payload));
+      }
+    }
+
+    let unreadMessages = 0;
+
+    function handleIncomingData(msg) {
+      if (typeof msg === 'string') {
+        try { msg = JSON.parse(msg); } catch (e) { return; }
+      }
+      if (msg.type === 'draw') {
+        drawSegment(msg.x0, msg.y0, msg.x1, msg.y1, msg.color, msg.size, msg.tool);
+      } else if (msg.type === 'shape') {
+        drawShape(msg.x0, msg.y0, msg.x1, msg.y1, msg.color, msg.size, msg.tool);
+      } else if (msg.type === 'text') {
+        drawTextOnBoard(msg.x, msg.y, msg.text, msg.color);
+      } else if (msg.type === 'clear') {
+        clearBoard(false);
+      } else if (msg.type === 'template') {
+        loadTemplate(msg.tpl, false);
+      } else if (msg.type === 'page') {
+        const diff = msg.page - currentPage;
+        if (diff !== 0) changePage(diff, true);
+      } else if (msg.type === 'cursor') {
+        const rc = document.getElementById('remoteCursor');
+        rc.style.display = 'block';
+        rc.style.left = (msg.x * canvas.width) + 'px';
+        rc.style.top = (msg.y * canvas.height) + 'px';
+      } else if (msg.type === 'chat') {
+        appendChat('Dispositivo 2', msg.text, false);
+        unreadMessages++;
+        document.getElementById('unreadCount').textContent = unreadMessages;
+      } else if (msg.type === 'telemetry') {
+        const icon = msg.isMobile ? '📱' : '💻';
+        document.getElementById('remoteDevTitle').textContent = `🟢 ${icon} ${msg.os}`;
+        document.getElementById('remoteVideoLabel').textContent = `${icon} ${msg.os}`;
+        document.getElementById('remoteCursorLabel').textContent = msg.isMobile ? '📱 Touch' : '💻 PC 2';
+        document.getElementById('remoteDeviceMeta').textContent =
+          `Mic: ${msg.micOn ? 'Attivo' : 'Muto'} • Cam: ${msg.camOn ? 'Attiva' : 'Oscurata'} • P2P OK`;
+        document.getElementById('badgeType').textContent = `Tipo: ${msg.isMobile ? 'Smartphone' : 'PC'}`;
+        document.getElementById('badgeCam').textContent = `Cam: ${msg.cam}`;
+        document.getElementById('badgeBatt').textContent = `Batteria: ${msg.battery || 'N/D'}`;
+      } else if (msg.type === 'ping') {
+        sendData({ type: 'pong' });
+      } else if (msg.type === 'pong') {
+        const rtt = Math.round(performance.now() - lastPingSent);
+        document.getElementById('remotePingBadge').textContent = `${rtt} ms`;
+      } else if (msg.type === 'cmd') {
+        executeRemoteCommand(msg.action);
+      }
+    }
+
+    function sendDeviceCommand(action) {
+      if (action === 'toggle-lock') {
+        remoteBoardLocked = !remoteBoardLocked;
+        document.getElementById('ctrlLockBtn').textContent = remoteBoardLocked ? '🔓 Sblocca Lavagna' : '🔒 Blocca Lavagna';
+      }
+      if (action === 'sync-page') {
+        sendData({ type: 'page', page: currentPage });
+        return;
+      }
+      sendData({ type: 'cmd', action });
+      if (simActive && action === 'flip-cam') {
+        simFacing = simFacing === 'Frontale' ? 'Posteriore' : 'Frontale';
+        document.getElementById('badgeCam').textContent = `Cam: ${simFacing}`;
+      }
+    }
+
+    function executeRemoteCommand(action) {
+      if (action === 'toggle-mic') toggleLocalMic();
+      else if (action === 'toggle-cam') toggleLocalCam();
+      else if (action === 'flip-cam') switchLocalCamera();
+      else if (action === 'toggle-lock') {
+        boardLockedForMe = !boardLockedForMe;
+        document.getElementById('boardLockBanner').style.display = boardLockedForMe ? 'inline-block' : 'none';
+      } else if (action === 'request-screen') shareLocalScreen();
+      else if (action === 'ring-bell') playBellAndVibrate();
+    }
+
+    function playBellAndVibrate() {
+      if (navigator.vibrate) navigator.vibrate([250, 120, 250]);
+      try {
+        const ac = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ac.createOscillator();
+        const gain = ac.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, ac.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.65);
+        osc.connect(gain); gain.connect(ac.destination);
+        osc.start(); osc.stop(ac.currentTime + 0.65);
+      } catch (e) {}
+    }
+
+    // Simulatore Smartphone v3
+    let simActive = false;
+    let simTimer = null;
+    let simFacing = 'Frontale';
+
+    function toggleSimDevice() {
+      simActive = !simActive;
+      const btn = document.getElementById('simBtn');
+      if (simActive) {
+        btn.textContent = '⏹️ Ferma Test';
+        btn.classList.replace('btn-success', 'btn-danger');
+        document.getElementById('remoteVideo').srcObject = createVirtualStream('Smartphone V3', 'Simulazione attiva');
+        document.getElementById('remoteVideoLabel').textContent = '📱 Smartphone (Simulato)';
+        document.getElementById('devCount').textContent = '2';
+        document.getElementById('remoteDeviceCard').style.opacity = '1';
+        document.getElementById('remoteDevTitle').textContent = '🟢 📱 Smartphone di Test';
+        document.getElementById('remoteDeviceMeta').textContent = 'Connessione simulata perfettamente funzionante';
+        document.getElementById('badgeType').textContent = 'Tipo: Smartphone';
+        document.getElementById('badgeCam').textContent = 'Cam: Frontale';
+        document.getElementById('badgeBatt').textContent = 'Batteria: 92%';
+        document.getElementById('remotePingBadge').textContent = '15 ms';
+        updateStatus(true, 'Simulazione Smartphone attiva');
+
+        let angle = 0;
+        simTimer = setInterval(() => {
+          angle += 0.15;
+          const nx = 0.5 + Math.cos(angle) * 0.22;
+          const ny = 0.5 + Math.sin(angle * 2) * 0.16;
+          handleIncomingData({ type: 'cursor', x: nx, y: ny });
+        }, 80);
+      } else {
+        btn.textContent = '🧪 Simula Smartphone';
+        btn.classList.replace('btn-danger', 'btn-success');
+        clearInterval(simTimer);
+        document.getElementById('remoteCursor').style.display = 'none';
+        updateStatus(false, 'Simulazione fermata');
+      }
+    }
+
+    function sendChat() {
+      const inp = document.getElementById('chatInput');
+      const txt = inp.value.trim();
+      if (!txt) return;
+      appendChat('Tu', txt, true);
+      sendData({ type: 'chat', text: txt });
+      inp.value = '';
+    }
+
+    function appendChat(author, text, isMe) {
+      const box = document.getElementById('chatMessages');
+      const div = document.createElement('div');
+      div.className = 'msg' + (isMe ? ' me' : '');
+      div.innerHTML = `<div class="msg-author">${author}</div><div>${text}</div>`;
+      box.appendChild(div);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function switchTab(id, btn) {
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('tab-' + id).classList.add('active');
+      btn.classList.add('active');
+      if (id === 'chat') {
+        unreadMessages = 0;
+        document.getElementById('unreadCount').textContent = '0';
+      }
+    }
+
+    function getInviteUrl() {
+      const code = document.getElementById('roomInput').value.trim();
+      return `${window.location.origin}${window.location.pathname}?room=${encodeURIComponent(code)}`;
+    }
+
+    function openInviteModal() {
+      const url = getInviteUrl();
+      document.getElementById('inviteLinkText').textContent = url;
+      const qrBox = document.getElementById('qrcodeContainer');
+      qrBox.innerHTML = '';
+      if (window.QRCode) {
+        new QRCode(qrBox, {
+          text: url,
+          width: 170,
+          height: 170,
+          colorDark: '#0b0f19',
+          colorLight: '#ffffff'
+        });
+      }
+      document.getElementById('inviteModal').classList.add('open');
+    }
+
+    function closeInviteModal() {
+      document.getElementById('inviteModal').classList.remove('open');
+    }
+
+    function copyInviteLink() {
+      navigator.clipboard.writeText(getInviteUrl());
+      alert('Link copiato negli appunti!');
+    }
+
+    function shareWhatsApp() {
+      const url = getInviteUrl();
+      const text = `Entra nella mia stanza Meet & Lavagna (v3): ${url}`;
+      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+    }
+
+    // P2P Manuale
+    let manualPC = null;
+    let manualChannel = null;
+
+    async function createManualOffer() {
+      manualPC = new RTCPeerConnection({ iceServers: [] });
+      localStream.getTracks().forEach(t => manualPC.addTrack(t, localStream));
+      manualChannel = manualPC.createDataChannel('board');
+      manualChannel.onmessage = (e) => handleIncomingData(e.data);
+      manualPC.ontrack = (e) => { document.getElementById('remoteVideo').srcObject = e.streams[0]; };
+      manualPC.onicecandidate = (e) => {
+        if (!e.candidate) {
+          document.getElementById('sdpBox').value = btoa(JSON.stringify(manualPC.localDescription));
+        }
+      };
+      const offer = await manualPC.createOffer();
+      await manualPC.setLocalDescription(offer);
+    }
+
+    async function acceptManualOffer() {
+      const raw = document.getElementById('sdpBox').value.trim();
+      if (!raw) return;
+      manualPC = new RTCPeerConnection({ iceServers: [] });
+      localStream.getTracks().forEach(t => manualPC.addTrack(t, localStream));
+      manualPC.ondatachannel = (e) => {
+        manualChannel = e.channel;
+        manualChannel.onmessage = (ev) => handleIncomingData(ev.data);
+      };
+      manualPC.ontrack = (e) => { document.getElementById('remoteVideo').srcObject = e.streams[0]; };
+      manualPC.onicecandidate = (e) => {
+        if (!e.candidate) {
+          document.getElementById('sdpBox').value = btoa(JSON.stringify(manualPC.localDescription));
+        }
+      };
+      await manualPC.setRemoteDescription(JSON.parse(atob(raw)));
+      const answer = await manualPC.createAnswer();
+      await manualPC.setLocalDescription(answer);
+    }
+
+    async function acceptManualAnswer() {
+      const raw = document.getElementById('sdpBox').value.trim();
+      if (!raw || !manualPC) return;
+      await manualPC.setRemoteDescription(JSON.parse(atob(raw)));
+      updateStatus(true, 'Connesso offline P2P!');
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const params = new URLSearchParams(window.location.search);
+      const roomParam = params.get('room');
+      if (roomParam) {
+        document.getElementById('roomInput').value = roomParam;
+      }
+      setTimeout(connectRoom, 500);
+    });
+  </script>
+</body>
+</html>
