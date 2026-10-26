@@ -3,10 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>MeetCloud & LAN Studio v3 — PC & Smartphone (Video, Lavagna & Controllo Remoto)</title>
-  <!-- PeerJS per connessione WebRTC tra PC e Smartphone su reti diverse -->
+  <title>MeetCloud & LAN Studio v4 — Audio/Video Fix & Controllo Totale</title>
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-  <!-- QRCode.js per inquadrare il link stanza dallo smartphone -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
     :root {
@@ -76,7 +74,6 @@
       justify-content: center;
       font-size: 18px;
       flex-shrink: 0;
-      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);
     }
 
     .brand-sub {
@@ -130,7 +127,6 @@
       font-size: 13px;
       width: 100px;
       text-align: center;
-      letter-spacing: 0.5px;
     }
 
     .btn {
@@ -152,12 +148,11 @@
     .btn:hover { background: var(--bg-hover); }
     .btn:active { transform: scale(0.97); }
     .btn-primary { background: var(--primary); border-color: var(--primary); }
-    .btn-primary:hover { background: var(--primary-hover); }
     .btn-success { background: var(--success); border-color: var(--success); color: #052e16; }
-    .btn-danger { background: var(--danger); border-color: var(--danger); }
+    .btn-danger { background: var(--danger); border-color: var(--danger); color: #fff; }
     .btn-purple { background: var(--purple); border-color: var(--purple); }
 
-    /* MAIN WORKSPACE */
+    /* WORKSPACE */
     .workspace {
       flex: 1;
       display: flex;
@@ -165,7 +160,6 @@
       position: relative;
     }
 
-    /* WHITEBOARD TOOLS */
     .toolbar {
       width: 62px;
       background: var(--bg-panel);
@@ -193,9 +187,7 @@
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      transition: all 0.15s;
     }
-    .tool-btn:hover { background: var(--bg-card); color: #fff; }
     .tool-btn.active {
       background: rgba(59, 130, 246, 0.22);
       border-color: var(--primary);
@@ -203,20 +195,18 @@
     }
 
     .color-swatch {
-      width: 25px;
-      height: 25px;
+      width: 24px;
+      height: 24px;
       border-radius: 50%;
       border: 2px solid transparent;
       cursor: pointer;
       flex-shrink: 0;
-      transition: transform 0.15s;
     }
     .color-swatch.active {
       border-color: #fff;
       transform: scale(1.18);
     }
 
-    /* BOARD AREA */
     .board-container {
       flex: 1;
       display: flex;
@@ -261,7 +251,6 @@
       touch-action: none;
     }
 
-    /* REMOTE LASER POINTER */
     .remote-cursor {
       position: absolute;
       pointer-events: none;
@@ -290,7 +279,7 @@
 
     /* RIGHT SIDEBAR */
     .sidebar {
-      width: 370px;
+      width: 380px;
       background: var(--bg-panel);
       border-left: 1px solid var(--border);
       display: flex;
@@ -322,11 +311,25 @@
       height: 100%;
       object-fit: cover;
     }
+    .video-overlay-off {
+      position: absolute;
+      inset: 0;
+      background: #0f172a;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 700;
+      gap: 6px;
+      z-index: 4;
+    }
     .video-label {
       position: absolute;
       bottom: 5px;
       left: 5px;
-      background: rgba(0, 0, 0, 0.75);
+      background: rgba(0, 0, 0, 0.78);
       color: #fff;
       font-size: 10px;
       padding: 2px 6px;
@@ -334,10 +337,7 @@
       display: flex;
       align-items: center;
       gap: 4px;
-      max-width: 92%;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      z-index: 5;
     }
 
     .media-controls-bar {
@@ -381,11 +381,8 @@
       flex-direction: column;
       gap: 10px;
     }
-    .tab-panel.active {
-      display: flex;
-    }
+    .tab-panel.active { display: flex; }
 
-    /* DEVICE CONTROL CARDS */
     .device-card {
       background: var(--bg-card);
       border: 1px solid var(--border);
@@ -432,6 +429,21 @@
       gap: 6px;
     }
 
+    /* AUDIO METER BAR */
+    .meter-wrap {
+      height: 6px;
+      background: #0f172a;
+      border-radius: 99px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .meter-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--success);
+      transition: width 0.08s linear;
+    }
+
     /* CHAT */
     .chat-messages {
       flex: 1;
@@ -460,7 +472,6 @@
       margin-bottom: 2px;
     }
 
-    /* MOBILE NAV */
     .mobile-nav {
       display: none;
       height: 52px;
@@ -488,7 +499,6 @@
       background: rgba(59, 130, 246, 0.1);
     }
 
-    /* MODAL */
     .modal-backdrop {
       position: fixed;
       inset: 0;
@@ -510,7 +520,6 @@
       display: flex;
       flex-direction: column;
       gap: 12px;
-      box-shadow: 0 20px 50px rgba(0,0,0,0.65);
     }
     .link-box {
       background: var(--bg-dark);
@@ -528,9 +537,6 @@
       padding: 12px;
       border-radius: 12px;
       align-self: center;
-      display: flex;
-      align-items: center;
-      justify-content: center;
     }
     .locked-banner {
       background: rgba(239, 68, 68, 0.22);
@@ -555,7 +561,6 @@
         border-bottom: 1px solid var(--border);
         padding: 4px 8px;
         overflow-x: auto;
-        overflow-y: hidden;
       }
       .canvas-wrap { margin: 6px; }
       .sidebar { width: 100%; border-left: none; flex: 1; display: none; }
@@ -571,24 +576,23 @@
     <div class="brand">
       <div class="brand-badge">📡</div>
       <div>
-        <div>MeetCloud &amp; LAN Studio <span style="font-size:11px; color:#60a5fa;">v3</span></div>
-        <div class="brand-sub">PC + Smartphone • Video P2P, Lavagna Touch &amp; Controllo</div>
+        <div>MeetCloud &amp; LAN Studio <span style="font-size:11px; color:#10b981;">v4 PRO</span></div>
+        <div class="brand-sub">Audio Bidirezionale Garantito + Mute &amp; Cam Control Verificati</div>
       </div>
     </div>
 
     <div class="room-bar">
       <span style="font-size:11.5px; color:var(--text-muted);">Stanza:</span>
       <input id="roomInput" class="room-input" type="text" value="AULA-101" />
-      <button class="btn btn-primary" onclick="connectRoom()">⚡ Connetti</button>
+      <button class="btn btn-primary" onclick="connectRoom()">⚡ Riconnetti</button>
       <button class="btn btn-purple" onclick="openInviteModal()">📱 QR &amp; Link</button>
     </div>
 
     <div style="display:flex; align-items:center; gap:6px;">
       <div class="status-pill">
         <span id="connDot" class="dot"></span>
-        <span id="connText">Pronto (In attesa)</span>
+        <span id="connText">Avvio fotocamera e microfono...</span>
       </div>
-      <button class="btn btn-success" onclick="toggleSimDevice()" id="simBtn">🧪 Simula Smartphone</button>
     </div>
   </header>
 
@@ -610,21 +614,21 @@
       <div class="color-swatch" style="background:#d97706;" onclick="setColor('#d97706', this)"></div>
       <div class="color-swatch" style="background:#9333ea;" onclick="setColor('#9333ea', this)"></div>
 
-      <button class="tool-btn" onclick="loadTemplate('cartesian')">📈</button>
-      <button class="tool-btn" onclick="loadTemplate('grid')">▦</button>
-      <button class="tool-btn" onclick="clearBoard(true)">🗑️</button>
-      <button class="tool-btn" onclick="downloadBoard()">💾</button>
+      <button class="tool-btn" onclick="loadTemplate('cartesian')" title="Piano Cartesiano">📈</button>
+      <button class="tool-btn" onclick="loadTemplate('grid')" title="Griglia">▦</button>
+      <button class="tool-btn" onclick="clearBoard(true)" title="Pulisci">🗑️</button>
+      <button class="tool-btn" onclick="downloadBoard()" title="Salva">💾</button>
     </aside>
 
     <main class="board-container" id="boardMain">
       <div class="board-header">
         <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-          <span>📋 <strong>Lavagna Touch &amp; PC</strong></span>
+          <span>📋 <strong>Lavagna Sincronizzata</strong></span>
           <label style="display:flex; align-items:center; gap:5px; color:var(--text-muted);">
             Tratto:
             <input type="range" id="sizeRange" min="2" max="24" value="4" style="width:70px;" />
           </label>
-          <span id="boardLockBanner" class="locked-banner">🔒 Lavagna bloccata</span>
+          <span id="boardLockBanner" class="locked-banner">🔒 Lavagna bloccata dall'Host</span>
         </div>
 
         <div style="display:flex; align-items:center; gap:5px;">
@@ -645,69 +649,84 @@
 
     <aside class="sidebar" id="rightSidebar">
       <div class="video-grid">
+        <!-- VIDEO LOCALE (TU) -->
         <div class="video-card">
           <video id="localVideo" autoplay muted playsinline webkit-playsinline></video>
+          <div id="localCamOffOverlay" class="video-overlay-off">
+            <span style="font-size:22px;">🚫</span>
+            <span>Tua Cam Spenta</span>
+          </div>
           <div class="video-label">
             <span id="myDeviceIcon">💻</span> Tu (<span id="myRoleBadge">Host</span>)
           </div>
         </div>
+
+        <!-- VIDEO REMOTO (ALTRO PC / SMARTPHONE) -->
         <div class="video-card">
           <video id="remoteVideo" autoplay playsinline webkit-playsinline></video>
+          <div id="remoteCamOffOverlay" class="video-overlay-off">
+            <span style="font-size:22px;">📷</span>
+            <span>Cam Remota Disattivata</span>
+          </div>
           <div class="video-label">
             <span id="remoteVideoLabel">📡 In attesa 2° disp.</span>
           </div>
         </div>
       </div>
 
+      <!-- CONTROLLI DEL TUO DISPOSITIVO -->
       <div class="media-controls-bar">
-        <button class="btn" style="flex:1;" id="btnMic" onclick="toggleLocalMic()">🎤 Mic</button>
-        <button class="btn" style="flex:1;" id="btnCam" onclick="toggleLocalCam()">📷 Cam</button>
-        <button class="btn" style="flex:1;" id="btnFlipCam" onclick="switchLocalCamera()" title="Cambia camera">🔄 Gira</button>
-        <button class="btn" style="flex:1;" onclick="shareLocalScreen()">🖥️ Schermo</button>
+        <button class="btn btn-success" style="flex:1;" id="btnMic" onclick="setLocalMic(!micEnabled)">🎤 Mio Mic: ON</button>
+        <button class="btn btn-success" style="flex:1;" id="btnCam" onclick="setLocalCam(!camEnabled)">📷 Mia Cam: ON</button>
+        <button class="btn" style="flex:1;" onclick="switchLocalCamera()" title="Gira fotocamera">🔄 Gira</button>
+        <button class="btn" style="flex:1;" onclick="retryRealCamera()" title="Riprova a sbloccare webcam/microfono reale">🔌 Sblocca Cam</button>
       </div>
 
       <div class="tabs">
         <button class="tab-btn active" onclick="switchTab('devices', this)">🎛️ Controllo (<span id="devCount">1</span>)</button>
         <button class="tab-btn" onclick="switchTab('chat', this)">💬 Chat (<span id="unreadCount">0</span>)</button>
-        <button class="tab-btn" onclick="switchTab('manual', this)">🔌 Offline</button>
       </div>
 
       <div id="tab-devices" class="tab-panel active">
-        <div style="font-size:11.5px; color:var(--text-muted); line-height:1.4;">
-          Gestisci microfono, camera e lavagna del 2° dispositivo (Smartphone o PC).
-        </div>
-
+        <!-- SCHEDA TUO PC/SMARTPHONE CON INDICATORE VOLUME VOCE -->
         <div class="device-card">
           <div class="device-head">
             <div class="device-title" id="localDevTitle">🟢 Questo Dispositivo (Tu)</div>
-            <span style="font-size:10.5px; background:rgba(59,130,246,0.2); color:#60a5fa; padding:2px 8px; border-radius:99px;">Attivo</span>
+            <span id="localMediaBadge" style="font-size:10.5px; background:rgba(16,185,129,0.2); color:#34d399; padding:2px 8px; border-radius:99px;">Pronto</span>
           </div>
-          <div class="device-meta" id="localDeviceMeta">Inizializzazione webcam...</div>
+          <div class="device-meta" id="localDeviceMeta">Verifica microfono e webcam...</div>
+          <div style="font-size:10.5px; color:var(--text-muted); display:flex; justify-content:space-between;">
+            <span>Livello tua voce (Microfono in uscita):</span>
+            <span id="micLevelText">Parla per testare</span>
+          </div>
+          <div class="meter-wrap">
+            <div id="localMicMeter" class="meter-fill"></div>
+          </div>
         </div>
 
-        <div class="device-card" id="remoteDeviceCard" style="opacity:0.68;">
+        <!-- SCHEDA 2° DISPOSITIVO (CONTROLLO REMOTO) -->
+        <div class="device-card" id="remoteDeviceCard" style="opacity:0.75;">
           <div class="device-head">
             <div class="device-title" id="remoteDevTitle">⚪ 2° Dispositivo (Non connesso)</div>
             <span id="remotePingBadge" style="font-size:11px; color:var(--text-muted);">-- ms</span>
           </div>
           <div class="device-meta" id="remoteDeviceMeta">
-            Inquadra il QR code o apri il link da smartphone.
+            Inquadra il QR code dallo smartphone o apri lo stesso link sul 2° PC.
           </div>
 
-          <div class="telemetry-badges" id="remoteTelemetry">
-            <span class="t-badge" id="badgeType">Tipo: --</span>
-            <span class="t-badge" id="badgeCam">Cam: --</span>
-            <span class="t-badge" id="badgeBatt">Batteria: --</span>
+          <div class="telemetry-badges">
+            <span class="t-badge" id="badgeMicState">🎤 Mic Remoto: --</span>
+            <span class="t-badge" id="badgeCamState">📷 Cam Remota: --</span>
+            <span class="t-badge" id="badgeCamSide">Lato: --</span>
           </div>
 
           <div class="control-grid">
-            <button class="btn" onclick="sendDeviceCommand('toggle-mic')" id="ctrlMicBtn">🎤 Mic ON/OFF</button>
-            <button class="btn" onclick="sendDeviceCommand('toggle-cam')" id="ctrlCamBtn">📷 Cam ON/OFF</button>
-            <button class="btn btn-primary" onclick="sendDeviceCommand('flip-cam')">🔄 Fronte/Retro</button>
+            <button class="btn btn-success" onclick="toggleRemoteMicControl()" id="ctrlMicBtn">🎤 Muta Dispositivo 2</button>
+            <button class="btn btn-success" onclick="toggleRemoteCamControl()" id="ctrlCamBtn">📷 Spegni Cam 2</button>
+            <button class="btn btn-primary" onclick="sendDeviceCommand('flip-cam')">🔄 Gira Cam Fronte/Retro</button>
             <button class="btn" onclick="sendDeviceCommand('toggle-lock')" id="ctrlLockBtn">🔒 Blocca Lavagna</button>
-            <button class="btn" onclick="sendDeviceCommand('request-screen')">🖥️ Chiedi Schermo</button>
-            <button class="btn" onclick="sendDeviceCommand('sync-page')">📄 Allinea Pagina</button>
-            <button class="btn btn-purple" style="grid-column: span 2;" onclick="sendDeviceCommand('ring-bell')">🔔 Suona Dispositivo</button>
+            <button class="btn" onclick="forceUnmuteRemoteAudio()" style="grid-column: span 2;">🔊 Risincronizza Audio in Entrata/Uscita</button>
+            <button class="btn btn-purple" style="grid-column: span 2;" onclick="sendDeviceCommand('ring-bell')">🔔 Suona &amp; Fai Vibrare Dispositivo 2</button>
           </div>
         </div>
       </div>
@@ -715,25 +734,13 @@
       <div id="tab-chat" class="tab-panel">
         <div id="chatMessages" class="chat-messages">
           <div class="msg">
-            <div class="msg-author">Sistema v3</div>
-            Pronti! Usa il QR code per collegare lo smartphone.
+            <div class="msg-author">Sistema v4</div>
+            Versione v4 attiva: la barra verde sotto "Questo Dispositivo" si muove quando parli, confermando che il tuo microfono sta trasmettendo!
           </div>
         </div>
         <div style="display:flex; gap:6px;">
           <input id="chatInput" type="text" placeholder="Scrivi messaggio..." style="flex:1; background:var(--bg-dark); border:1px solid var(--border); color:#fff; padding:8px 10px; border-radius:8px;" onkeydown="if(event.key==='Enter') sendChat()" />
           <button class="btn btn-primary" onclick="sendChat()">Invia</button>
-        </div>
-      </div>
-
-      <div id="tab-manual" class="tab-panel">
-        <div style="font-size:11.5px; color:var(--text-muted); line-height:1.4;">
-          Connessione manuale SDP 100% offline:
-        </div>
-        <button class="btn btn-primary" onclick="createManualOffer()">1. Genera Offerta</button>
-        <textarea id="sdpBox" rows="4" placeholder="Codice SDP..." style="width:100%; background:var(--bg-dark); color:#fff; border:1px solid var(--border); border-radius:8px; padding:8px; font-size:11px; font-family:monospace;"></textarea>
-        <div style="display:flex; gap:6px;">
-          <button class="btn" style="flex:1;" onclick="acceptManualOffer()">2. Accetta</button>
-          <button class="btn btn-success" style="flex:1;" onclick="acceptManualAnswer()">3. Conferma</button>
         </div>
       </div>
     </aside>
@@ -757,17 +764,14 @@
   <div class="modal-backdrop" id="inviteModal">
     <div class="modal">
       <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h3 style="font-size:15.5px;">📱 Inquadra QR Code</h3>
+        <h3 style="font-size:15.5px;">📱 Inquadra QR Code dallo Smartphone</h3>
         <button class="btn" onclick="closeInviteModal()">✕</button>
       </div>
-      <p style="font-size:12.5px; color:var(--text-muted);">
-        Inquadra questo QR code con la fotocamera dello smartphone per collegarti alla stanza:
-      </p>
       <div class="qr-wrap">
         <div id="qrcodeContainer"></div>
       </div>
       <div class="link-box" id="inviteLinkText"></div>
-      <div style="display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap;">
+      <div style="display:flex; gap:8px; justify-content:flex-end;">
         <button class="btn btn-success" onclick="shareWhatsApp()">📲 WhatsApp</button>
         <button class="btn btn-primary" onclick="copyInviteLink()">📋 Copia Link</button>
       </div>
@@ -777,13 +781,6 @@
   <script>
     const isMobileDevice = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
     let currentFacingMode = 'user';
-    let batteryLevelStr = 'N/D';
-
-    if (navigator.getBattery) {
-      navigator.getBattery().then(b => {
-        batteryLevelStr = Math.round(b.level * 100) + '%';
-      }).catch(() => {});
-    }
 
     function setMobileView(view) {
       const boardMain = document.getElementById('boardMain');
@@ -808,7 +805,9 @@
       }
     }
 
-    // Lavagna
+    /********************************************************************
+     * 1. LAVAGNA SINCRONIZZATA
+     ********************************************************************/
     const canvas = document.getElementById('boardCanvas');
     const ctx = canvas.getContext('2d');
     const wrap = document.getElementById('canvasWrap');
@@ -841,9 +840,7 @@
     setTimeout(resizeCanvas, 80);
 
     function saveCurrentPage() {
-      if (canvas.width > 0 && canvas.height > 0) {
-        pagesData[currentPage] = canvas.toDataURL();
-      }
+      if (canvas.width > 0 && canvas.height > 0) pagesData[currentPage] = canvas.toDataURL();
     }
 
     function changePage(delta, fromRemote = false) {
@@ -862,9 +859,7 @@
 
     function setTool(t) {
       currentTool = t;
-      document.querySelectorAll('.tool-btn').forEach(b => {
-        b.classList.toggle('active', b.dataset.tool === t);
-      });
+      document.querySelectorAll('.tool-btn').forEach(b => b.classList.toggle('active', b.dataset.tool === t));
     }
 
     function setColor(c, el) {
@@ -913,7 +908,6 @@
       ctx.lineCap = 'round';
       const sx = x0 * canvas.width, sy = y0 * canvas.height;
       const ex = x1 * canvas.width, ey = y1 * canvas.height;
-
       if (tool === 'line') {
         ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.stroke();
       } else if (tool === 'rect') {
@@ -953,10 +947,8 @@
       const pos = getNormPos(e);
       lastX = pos.x; lastY = pos.y;
       sendData({ type: 'cursor', x: pos.x, y: pos.y });
-
       if (!isDrawing || boardLockedForMe) return;
       const size = parseInt(document.getElementById('sizeRange').value, 10);
-
       if (currentTool === 'laser') return;
       if (['pen', 'highlighter', 'eraser'].includes(currentTool)) {
         drawSegment(startX, startY, pos.x, pos.y, currentColor, size, currentTool);
@@ -1016,109 +1008,217 @@
       a.click();
     }
 
-    // Fotocamera con Fallback Virtuale Robusto per evitare schermate nere
+    /********************************************************************
+     * 2. ACQUISIZIONE SEPARATA VIDEO + AUDIO (MAI PIU' AUDIO MUTO!)
+     ********************************************************************/
     let localStream = null;
     let micEnabled = true;
     let camEnabled = true;
+    let audioCtx = null;
+    let micAnalyser = null;
 
-    function createVirtualStream(label = 'Live Video', sub = 'WebRTC Attivo') {
+    function createFallbackVideoTrack(label = 'Camera Virtuale') {
       const c = document.createElement('canvas');
       c.width = 640; c.height = 400;
       const g = c.getContext('2d');
       let t = 0;
       setInterval(() => {
-        t += 0.05;
+        t += 0.06;
         g.fillStyle = '#0f172a';
         g.fillRect(0, 0, c.width, c.height);
         g.fillStyle = '#3b82f6';
         g.beginPath();
-        g.arc(320 + Math.cos(t) * 70, 210 + Math.sin(t) * 40, 46, 0, Math.PI * 2);
+        g.arc(320 + Math.cos(t) * 65, 200 + Math.sin(t) * 35, 42, 0, Math.PI * 2);
         g.fill();
         g.fillStyle = '#ffffff';
-        g.font = 'bold 24px Segoe UI';
+        g.font = 'bold 22px Segoe UI';
         g.fillText(label, 24, 46);
-        g.fillStyle = '#94a3b8';
-        g.font = '18px Segoe UI';
-        g.fillText(sub, 24, 78);
       }, 60);
-      return c.captureStream(20);
+      return c.captureStream(20).getVideoTracks()[0];
     }
 
-    async function initLocalMedia(facing = 'user') {
-      currentFacingMode = facing;
+    function createSilentAudioTrack() {
       try {
-        if (localStream) {
-          localStream.getVideoTracks().forEach(t => t.stop());
-        }
-        localStream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: facing } },
-          audio: true
-        });
-        document.getElementById('localDeviceMeta').textContent = 'Webcam e Microfono attivi con successo';
-      } catch (err) {
-        console.warn('Webcam bloccata o assente, avvio stream virtuale di supporto:', err);
-        localStream = createVirtualStream(isMobileDevice ? 'Smartphone V3' : 'PC Host V3', 'Modalità Sicura WebRTC');
-        document.getElementById('localDeviceMeta').textContent = 'Camera virtuale attiva (Permessi cam non concessi o assenti)';
+        const ctxAudio = new (window.AudioContext || window.webkitAudioContext)();
+        const dst = ctxAudio.createMediaStreamDestination();
+        const osc = ctxAudio.createOscillator();
+        const gain = ctxAudio.createGain();
+        gain.gain.value = 0; // Silenzio ma traccia WebRTC valida
+        osc.connect(gain);
+        gain.connect(dst);
+        osc.start();
+        return dst.stream.getAudioTracks()[0];
+      } catch (e) {
+        return null;
       }
+    }
+
+    async function acquireLocalMedia(facing = 'user') {
+      currentFacingMode = facing;
+      let videoTrack = null;
+      let audioTrack = null;
+      let realVideoOk = false;
+      let realAudioOk = false;
+
+      // 1) Proviamo prima Video + Audio insieme
+      try {
+        const both = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: facing }, width: { ideal: 640 }, height: { ideal: 400 } },
+          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+        });
+        videoTrack = both.getVideoTracks()[0];
+        audioTrack = both.getAudioTracks()[0];
+        realVideoOk = !!videoTrack;
+        realAudioOk = !!audioTrack;
+      } catch (e1) {
+        // 2) Se fallisce (es. webcam occupata o assente), acquisiamo il MICROFONO da solo!
+        try {
+          const onlyAudio = await navigator.mediaDevices.getUserMedia({
+            audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+          });
+          audioTrack = onlyAudio.getAudioTracks()[0];
+          realAudioOk = !!audioTrack;
+        } catch (eAudio) {}
+
+        // 3) E proviamo il VIDEO da solo!
+        try {
+          const onlyVideo = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { ideal: facing } }
+          });
+          videoTrack = onlyVideo.getVideoTracks()[0];
+          realVideoOk = !!videoTrack;
+        } catch (eVideo) {}
+      }
+
+      if (!videoTrack) {
+        videoTrack = createFallbackVideoTrack(isMobileDevice ? '📱 Smartphone' : '💻 PC Host');
+      }
+      if (!audioTrack) {
+        audioTrack = createSilentAudioTrack();
+      }
+
+      if (localStream) {
+        localStream.getTracks().forEach(t => t.stop());
+      }
+
+      const tracks = [];
+      if (videoTrack) tracks.push(videoTrack);
+      if (audioTrack) tracks.push(audioTrack);
+      localStream = new MediaStream(tracks);
+
+      // Applica stato attuale dei pulsanti
+      setLocalMic(micEnabled, false);
+      setLocalCam(camEnabled, false);
 
       const lv = document.getElementById('localVideo');
       lv.srcObject = localStream;
+      lv.muted = true; // Sempre muto localmente per evitare eco
       lv.play().catch(() => {});
 
+      // Aggiorna diagnostica
       document.getElementById('myDeviceIcon').textContent = isMobileDevice ? '📱' : '💻';
-      document.getElementById('localDevTitle').textContent = isMobileDevice ? '🟢 Smartphone (Tu)' : '🟢 PC Host (Tu)';
+      document.getElementById('localDeviceMeta').textContent =
+        `Webcam: ${realVideoOk ? '✅ Reale Attiva' : '⚠️ Virtuale (Premi Sblocca Cam)'} • Microfono: ${realAudioOk ? '✅ Reale Attivo' : '❌ Non rilevato'}`;
 
-      if (activeCall && activeCall.peerConnection && localStream.getVideoTracks()[0]) {
-        const sender = activeCall.peerConnection.getSenders().find(s => s.track && s.track.kind === 'video');
-        if (sender) sender.replaceTrack(localStream.getVideoTracks()[0]);
+      if (realAudioOk) {
+        startMicVolumeMeter(localStream);
       }
+
+      // Se siamo già in chiamata con l'altro dispositivo, sostituisci subito sia video che audio!
+      replaceActiveCallTracks();
       sendTelemetry();
     }
-    initLocalMedia('user');
+
+    function replaceActiveCallTracks() {
+      if (!activeCall || !activeCall.peerConnection || !localStream) return;
+      const senders = activeCall.peerConnection.getSenders();
+      const vTrack = localStream.getVideoTracks()[0];
+      const aTrack = localStream.getAudioTracks()[0];
+
+      if (vTrack) {
+        const vSender = senders.find(s => s.track && s.track.kind === 'video');
+        if (vSender) vSender.replaceTrack(vTrack);
+      }
+      if (aTrack) {
+        const aSender = senders.find(s => s.track && s.track.kind === 'audio');
+        if (aSender) aSender.replaceTrack(aTrack);
+      }
+    }
+
+    function startMicVolumeMeter(stream) {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const src = audioCtx.createMediaStreamSource(stream);
+        micAnalyser = audioCtx.createAnalyser();
+        micAnalyser.fftSize = 256;
+        src.connect(micAnalyser);
+        const data = new Uint8Array(micAnalyser.frequencyBinCount);
+
+        function tick() {
+          if (!micAnalyser) return;
+          micAnalyser.getByteFrequencyData(data);
+          let sum = 0;
+          for (let i = 0; i < data.length; i++) sum += data[i];
+          const avg = sum / data.length;
+          const pct = micEnabled ? Math.min(100, Math.round(avg * 1.8)) : 0;
+          document.getElementById('localMicMeter').style.width = pct + '%';
+          document.getElementById('micLevelText').textContent = !micEnabled
+            ? '🔇 Microfono Muto'
+            : (pct > 8 ? '🟢 Voce rilevata!' : 'In ascolto...');
+          requestAnimationFrame(tick);
+        }
+        tick();
+      } catch (e) {}
+    }
+
+    async function retryRealCamera() {
+      await acquireLocalMedia(currentFacingMode);
+      if (dataConn && dataConn.open && peer && activeCall) {
+        replaceActiveCallTracks();
+      }
+    }
 
     async function switchLocalCamera() {
       const nextFacing = currentFacingMode === 'user' ? 'environment' : 'user';
-      await initLocalMedia(nextFacing);
+      await acquireLocalMedia(nextFacing);
     }
 
-    function toggleLocalMic() {
-      micEnabled = !micEnabled;
-      if (localStream) localStream.getAudioTracks().forEach(t => t.enabled = micEnabled);
-      const b = document.getElementById('btnMic');
-      b.textContent = micEnabled ? '🎤 Mic' : '🔇 Off';
-      b.classList.toggle('btn-danger', !micEnabled);
-      sendTelemetry();
-    }
-
-    function toggleLocalCam() {
-      camEnabled = !camEnabled;
-      if (localStream) localStream.getVideoTracks().forEach(t => t.enabled = camEnabled);
-      const b = document.getElementById('btnCam');
-      b.textContent = camEnabled ? '📷 Cam' : '🚫 Off';
-      b.classList.toggle('btn-danger', !camEnabled);
-      sendTelemetry();
-    }
-
-    async function shareLocalScreen() {
-      try {
-        const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
-        document.getElementById('localVideo').srcObject = screenStream;
-        if (activeCall && activeCall.peerConnection) {
-          const sender = activeCall.peerConnection.getSenders().find(s => s.track && s.track.kind === 'video');
-          if (sender) sender.replaceTrack(screenStream.getVideoTracks()[0]);
-        }
-        screenStream.getVideoTracks()[0].onended = () => initLocalMedia(currentFacingMode);
-      } catch (e) {
-        alert('Condivisione schermo annullata o non supportata dal browser.');
+    // Funzioni ESPLICITE per accendere/spegnere il proprio Mic e Cam (niente desincronizzazioni!)
+    function setLocalMic(enable, notify = true) {
+      micEnabled = !!enable;
+      if (localStream) {
+        localStream.getAudioTracks().forEach(t => { t.enabled = micEnabled; });
       }
+      const b = document.getElementById('btnMic');
+      b.textContent = micEnabled ? '🎤 Mio Mic: ON' : '🔇 Mio Mic: OFF';
+      b.className = 'btn ' + (micEnabled ? 'btn-success' : 'btn-danger');
+      if (notify) sendTelemetry();
     }
 
-    // PeerJS Cloud Connection
+    function setLocalCam(enable, notify = true) {
+      camEnabled = !!enable;
+      if (localStream) {
+        localStream.getVideoTracks().forEach(t => { t.enabled = camEnabled; });
+      }
+      document.getElementById('localCamOffOverlay').style.display = camEnabled ? 'none' : 'flex';
+      const b = document.getElementById('btnCam');
+      b.textContent = camEnabled ? '📷 Mia Cam: ON' : '🚫 Mia Cam: OFF';
+      b.className = 'btn ' + (camEnabled ? 'btn-success' : 'btn-danger');
+      if (notify) sendTelemetry();
+    }
+
+    /********************************************************************
+     * 3. CONNESSIONE PEERJS E GESTIONE CHIAMATA BIDIREZIONALE
+     ********************************************************************/
     let peer = null;
     let dataConn = null;
     let activeCall = null;
     let pingInterval = null;
     let lastPingSent = 0;
+
+    // Stato reale del dispositivo remoto
+    let remoteMicIsOn = true;
+    let remoteCamIsOn = true;
 
     function updateStatus(online, text) {
       const dot = document.getElementById('connDot');
@@ -1131,8 +1231,8 @@
       document.getElementById('roomInput').value = code;
       if (peer) peer.destroy();
 
-      const hostId = `meetcloud-v3-${code}-host`;
-      updateStatus(false, `Connessione stanza ${code}...`);
+      const hostId = `meetcloud-v4-${code}-host`;
+      updateStatus(false, `Apertura stanza ${code}...`);
 
       peer = new Peer(hostId, {
         config: {
@@ -1152,6 +1252,7 @@
       peer.on('connection', (conn) => setupDataChannel(conn));
 
       peer.on('call', (call) => {
+        // L'Host risponde SEMPRE inviando il proprio localStream completo (Video + Audio)
         call.answer(localStream);
         setupMediaCall(call);
       });
@@ -1182,6 +1283,12 @@
         const call = peer.call(hostId, localStream);
         setupMediaCall(call);
       });
+
+      // Anche il Guest accetta eventuali richiamate di risincronizzazione dall'Host
+      peer.on('call', (call) => {
+        call.answer(localStream);
+        setupMediaCall(call);
+      });
     }
 
     function setupMediaCall(call) {
@@ -1189,26 +1296,42 @@
       call.on('stream', (remoteStream) => {
         const rv = document.getElementById('remoteVideo');
         rv.srcObject = remoteStream;
-        rv.play().catch(() => {});
+        rv.muted = !remoteMicIsOn;
+        rv.volume = 1.0;
+        rv.play().catch(() => {
+          // Se il browser blocca l'audio automatico, mostriamo un avviso chiaro
+          updateStatus(true, 'Tocca "🔊 Risincronizza Audio" per sentire la voce');
+        });
       });
+    }
+
+    function forceUnmuteRemoteAudio() {
+      const rv = document.getElementById('remoteVideo');
+      rv.muted = false;
+      rv.volume = 1.0;
+      rv.play().catch(() => {});
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      replaceActiveCallTracks();
+      sendData({ type: 'cmd', action: 'resync-audio' });
     }
 
     function sendTelemetry() {
       sendData({
         type: 'telemetry',
         isMobile: isMobileDevice,
-        os: isMobileDevice ? (/iPhone|iPad/i.test(navigator.userAgent) ? 'iOS (iPhone/iPad)' : 'Android Smartphone') : (navigator.platform || 'Windows PC'),
+        os: isMobileDevice ? (/iPhone|iPad/i.test(navigator.userAgent) ? 'iPhone / iPad' : 'Smartphone Android') : 'PC Windows/Mac',
         cam: currentFacingMode === 'environment' ? 'Posteriore' : 'Frontale',
         micOn: micEnabled,
-        camOn: camEnabled,
-        battery: batteryLevelStr
+        camOn: camEnabled
       });
     }
 
     function setupDataChannel(conn) {
       dataConn = conn;
       conn.on('open', () => {
-        updateStatus(true, 'Connesso in tempo reale!');
+        updateStatus(true, 'Connesso in Tempo Reale!');
         document.getElementById('devCount').textContent = '2';
         document.getElementById('remoteDeviceCard').style.opacity = '1';
         sendTelemetry();
@@ -1230,9 +1353,6 @@
     function sendData(payload) {
       if (dataConn && dataConn.open) {
         dataConn.send(payload);
-      }
-      if (manualChannel && manualChannel.readyState === 'open') {
-        manualChannel.send(JSON.stringify(payload));
       }
     }
 
@@ -1265,23 +1385,88 @@
         unreadMessages++;
         document.getElementById('unreadCount').textContent = unreadMessages;
       } else if (msg.type === 'telemetry') {
-        const icon = msg.isMobile ? '📱' : '💻';
-        document.getElementById('remoteDevTitle').textContent = `🟢 ${icon} ${msg.os}`;
-        document.getElementById('remoteVideoLabel').textContent = `${icon} ${msg.os}`;
-        document.getElementById('remoteCursorLabel').textContent = msg.isMobile ? '📱 Touch' : '💻 PC 2';
-        document.getElementById('remoteDeviceMeta').textContent =
-          `Mic: ${msg.micOn ? 'Attivo' : 'Muto'} • Cam: ${msg.camOn ? 'Attiva' : 'Oscurata'} • P2P OK`;
-        document.getElementById('badgeType').textContent = `Tipo: ${msg.isMobile ? 'Smartphone' : 'PC'}`;
-        document.getElementById('badgeCam').textContent = `Cam: ${msg.cam}`;
-        document.getElementById('badgeBatt').textContent = `Batteria: ${msg.battery || 'N/D'}`;
+        remoteMicIsOn = !!msg.micOn;
+        remoteCamIsOn = !!msg.camOn;
+        updateRemoteControlUI(msg);
       } else if (msg.type === 'ping') {
         sendData({ type: 'pong' });
       } else if (msg.type === 'pong') {
         const rtt = Math.round(performance.now() - lastPingSent);
         document.getElementById('remotePingBadge').textContent = `${rtt} ms`;
       } else if (msg.type === 'cmd') {
-        executeRemoteCommand(msg.action);
+        executeRemoteCommand(msg);
       }
+    }
+
+    function updateRemoteControlUI(msg) {
+      const icon = msg.isMobile ? '📱' : '💻';
+      document.getElementById('remoteDevTitle').textContent = `🟢 ${icon} ${msg.os}`;
+      document.getElementById('remoteVideoLabel').textContent = `${icon} ${msg.os}`;
+      document.getElementById('remoteDeviceMeta').textContent = 'Connessione diretta P2P attiva';
+
+      // Mostra/Nasconde l'overlay "Cam Remota Disattivata"
+      document.getElementById('remoteCamOffOverlay').style.display = remoteCamIsOn ? 'none' : 'flex';
+
+      // Applica anche il mute locale di sicurezza sul video remoto
+      const rv = document.getElementById('remoteVideo');
+      rv.muted = !remoteMicIsOn;
+
+      // Aggiorna badge e pulsanti di controllo
+      document.getElementById('badgeMicState').textContent = remoteMicIsOn ? '🎤 Mic Remoto: ATTIVO' : '🔇 Mic Remoto: MUTATO';
+      document.getElementById('badgeCamState').textContent = remoteCamIsOn ? '📷 Cam Remota: ATTIVA' : '🚫 Cam Remota: SPENTA';
+      document.getElementById('badgeCamSide').textContent = `Lato: ${msg.cam}`;
+
+      const ctrlMicBtn = document.getElementById('ctrlMicBtn');
+      ctrlMicBtn.textContent = remoteMicIsOn ? '🎤 Muta Dispositivo 2' : '🔇 Riattiva Mic 2';
+      ctrlMicBtn.className = 'btn ' + (remoteMicIsOn ? 'btn-success' : 'btn-danger');
+
+      const ctrlCamBtn = document.getElementById('ctrlCamBtn');
+      ctrlCamBtn.textContent = remoteCamIsOn ? '📷 Spegni Cam 2' : '🚫 Riattiva Cam 2';
+      ctrlCamBtn.className = 'btn ' + (remoteCamIsOn ? 'btn-success' : 'btn-danger');
+    }
+
+    /********************************************************************
+     * 4. COMANDI DI CONTROLLO REMOTO GARANTITI (MUTE & CAM)
+     ********************************************************************/
+    function toggleRemoteMicControl() {
+      const targetState = !remoteMicIsOn;
+      remoteMicIsOn = targetState;
+
+      // 1) Mute immediato anche sul tuo player locale (effetto istantaneo garantito al 100%)
+      const rv = document.getElementById('remoteVideo');
+      rv.muted = !targetState;
+      if (rv.srcObject) {
+        rv.srcObject.getAudioTracks().forEach(t => { t.enabled = targetState; });
+      }
+
+      // 2) Invia comando esplicito al 2° dispositivo per spegnere/accendere il suo microfono hardware
+      sendData({ type: 'cmd', action: 'set-mic', value: targetState });
+
+      // Aggiorna subito il pulsante
+      const ctrlMicBtn = document.getElementById('ctrlMicBtn');
+      ctrlMicBtn.textContent = remoteMicIsOn ? '🎤 Muta Dispositivo 2' : '🔇 Riattiva Mic 2';
+      ctrlMicBtn.className = 'btn ' + (remoteMicIsOn ? 'btn-success' : 'btn-danger');
+      document.getElementById('badgeMicState').textContent = remoteMicIsOn ? '🎤 Mic Remoto: ATTIVO' : '🔇 Mic Remoto: MUTATO';
+    }
+
+    function toggleRemoteCamControl() {
+      const targetState = !remoteCamIsOn;
+      remoteCamIsOn = targetState;
+
+      // 1) Copri/Scopri subito il video remoto sul tuo schermo
+      document.getElementById('remoteCamOffOverlay').style.display = targetState ? 'none' : 'flex';
+      const rv = document.getElementById('remoteVideo');
+      if (rv.srcObject) {
+        rv.srcObject.getVideoTracks().forEach(t => { t.enabled = targetState; });
+      }
+
+      // 2) Invia comando esplicito al 2° dispositivo per disattivare la sua fotocamera
+      sendData({ type: 'cmd', action: 'set-cam', value: targetState });
+
+      const ctrlCamBtn = document.getElementById('ctrlCamBtn');
+      ctrlCamBtn.textContent = remoteCamIsOn ? '📷 Spegni Cam 2' : '🚫 Riattiva Cam 2';
+      ctrlCamBtn.className = 'btn ' + (remoteCamIsOn ? 'btn-success' : 'btn-danger');
+      document.getElementById('badgeCamState').textContent = remoteCamIsOn ? '📷 Cam Remota: ATTIVA' : '🚫 Cam Remota: SPENTA';
     }
 
     function sendDeviceCommand(action) {
@@ -1289,26 +1474,29 @@
         remoteBoardLocked = !remoteBoardLocked;
         document.getElementById('ctrlLockBtn').textContent = remoteBoardLocked ? '🔓 Sblocca Lavagna' : '🔒 Blocca Lavagna';
       }
-      if (action === 'sync-page') {
-        sendData({ type: 'page', page: currentPage });
-        return;
-      }
       sendData({ type: 'cmd', action });
-      if (simActive && action === 'flip-cam') {
-        simFacing = simFacing === 'Frontale' ? 'Posteriore' : 'Frontale';
-        document.getElementById('badgeCam').textContent = `Cam: ${simFacing}`;
-      }
     }
 
-    function executeRemoteCommand(action) {
-      if (action === 'toggle-mic') toggleLocalMic();
-      else if (action === 'toggle-cam') toggleLocalCam();
-      else if (action === 'flip-cam') switchLocalCamera();
-      else if (action === 'toggle-lock') {
+    function executeRemoteCommand(msg) {
+      const action = msg.action;
+      if (action === 'set-mic') {
+        setLocalMic(msg.value, true);
+      } else if (action === 'set-cam') {
+        setLocalCam(msg.value, true);
+      } else if (action === 'flip-cam') {
+        switchLocalCamera();
+      } else if (action === 'toggle-lock') {
         boardLockedForMe = !boardLockedForMe;
         document.getElementById('boardLockBanner').style.display = boardLockedForMe ? 'inline-block' : 'none';
-      } else if (action === 'request-screen') shareLocalScreen();
-      else if (action === 'ring-bell') playBellAndVibrate();
+      } else if (action === 'resync-audio') {
+        const rv = document.getElementById('remoteVideo');
+        rv.muted = false;
+        rv.volume = 1.0;
+        rv.play().catch(() => {});
+        replaceActiveCallTracks();
+      } else if (action === 'ring-bell') {
+        playBellAndVibrate();
+      }
     }
 
     function playBellAndVibrate() {
@@ -1323,45 +1511,6 @@
         osc.connect(gain); gain.connect(ac.destination);
         osc.start(); osc.stop(ac.currentTime + 0.65);
       } catch (e) {}
-    }
-
-    // Simulatore Smartphone v3
-    let simActive = false;
-    let simTimer = null;
-    let simFacing = 'Frontale';
-
-    function toggleSimDevice() {
-      simActive = !simActive;
-      const btn = document.getElementById('simBtn');
-      if (simActive) {
-        btn.textContent = '⏹️ Ferma Test';
-        btn.classList.replace('btn-success', 'btn-danger');
-        document.getElementById('remoteVideo').srcObject = createVirtualStream('Smartphone V3', 'Simulazione attiva');
-        document.getElementById('remoteVideoLabel').textContent = '📱 Smartphone (Simulato)';
-        document.getElementById('devCount').textContent = '2';
-        document.getElementById('remoteDeviceCard').style.opacity = '1';
-        document.getElementById('remoteDevTitle').textContent = '🟢 📱 Smartphone di Test';
-        document.getElementById('remoteDeviceMeta').textContent = 'Connessione simulata perfettamente funzionante';
-        document.getElementById('badgeType').textContent = 'Tipo: Smartphone';
-        document.getElementById('badgeCam').textContent = 'Cam: Frontale';
-        document.getElementById('badgeBatt').textContent = 'Batteria: 92%';
-        document.getElementById('remotePingBadge').textContent = '15 ms';
-        updateStatus(true, 'Simulazione Smartphone attiva');
-
-        let angle = 0;
-        simTimer = setInterval(() => {
-          angle += 0.15;
-          const nx = 0.5 + Math.cos(angle) * 0.22;
-          const ny = 0.5 + Math.sin(angle * 2) * 0.16;
-          handleIncomingData({ type: 'cursor', x: nx, y: ny });
-        }, 80);
-      } else {
-        btn.textContent = '🧪 Simula Smartphone';
-        btn.classList.replace('btn-danger', 'btn-success');
-        clearInterval(simTimer);
-        document.getElementById('remoteCursor').style.display = 'none';
-        updateStatus(false, 'Simulazione fermata');
-      }
     }
 
     function sendChat() {
@@ -1426,63 +1575,19 @@
 
     function shareWhatsApp() {
       const url = getInviteUrl();
-      const text = `Entra nella mia stanza Meet & Lavagna (v3): ${url}`;
+      const text = `Entra nella mia stanza Meet & Lavagna (v4): ${url}`;
       window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
     }
 
-    // P2P Manuale
-    let manualPC = null;
-    let manualChannel = null;
-
-    async function createManualOffer() {
-      manualPC = new RTCPeerConnection({ iceServers: [] });
-      localStream.getTracks().forEach(t => manualPC.addTrack(t, localStream));
-      manualChannel = manualPC.createDataChannel('board');
-      manualChannel.onmessage = (e) => handleIncomingData(e.data);
-      manualPC.ontrack = (e) => { document.getElementById('remoteVideo').srcObject = e.streams[0]; };
-      manualPC.onicecandidate = (e) => {
-        if (!e.candidate) {
-          document.getElementById('sdpBox').value = btoa(JSON.stringify(manualPC.localDescription));
-        }
-      };
-      const offer = await manualPC.createOffer();
-      await manualPC.setLocalDescription(offer);
-    }
-
-    async function acceptManualOffer() {
-      const raw = document.getElementById('sdpBox').value.trim();
-      if (!raw) return;
-      manualPC = new RTCPeerConnection({ iceServers: [] });
-      localStream.getTracks().forEach(t => manualPC.addTrack(t, localStream));
-      manualPC.ondatachannel = (e) => {
-        manualChannel = e.channel;
-        manualChannel.onmessage = (ev) => handleIncomingData(ev.data);
-      };
-      manualPC.ontrack = (e) => { document.getElementById('remoteVideo').srcObject = e.streams[0]; };
-      manualPC.onicecandidate = (e) => {
-        if (!e.candidate) {
-          document.getElementById('sdpBox').value = btoa(JSON.stringify(manualPC.localDescription));
-        }
-      };
-      await manualPC.setRemoteDescription(JSON.parse(atob(raw)));
-      const answer = await manualPC.createAnswer();
-      await manualPC.setLocalDescription(answer);
-    }
-
-    async function acceptManualAnswer() {
-      const raw = document.getElementById('sdpBox').value.trim();
-      if (!raw || !manualPC) return;
-      await manualPC.setRemoteDescription(JSON.parse(atob(raw)));
-      updateStatus(true, 'Connesso offline P2P!');
-    }
-
-    window.addEventListener('DOMContentLoaded', () => {
+    // AVVIO ORDINATO: Prima acquisiamo Microfono e Webcam reali, POI apriamo la stanza!
+    window.addEventListener('DOMContentLoaded', async () => {
       const params = new URLSearchParams(window.location.search);
       const roomParam = params.get('room');
       if (roomParam) {
         document.getElementById('roomInput').value = roomParam;
       }
-      setTimeout(connectRoom, 500);
+      await acquireLocalMedia('user');
+      connectRoom();
     });
   </script>
 </body>
