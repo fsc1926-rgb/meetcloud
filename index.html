@@ -3,301 +3,380 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>MeetStudio v16 — Struttura Blindata & Sync Perfetto</title>
+  <title>MeetStudio v17 — Interfaccia Perfetta & Video Fix</title>
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
   <style>
     :root {
-      --bg-dark: #202124; --bg-panel: #3c4043; --text-main: #e8eaed; --text-muted: #9aa0a6;
-      --primary: #8ab4f8; --danger: #ea4335; --control-bg: #3c4043; --control-hover: #4a4d51;
+      --bg-dark: #202124; --bg-panel: #3c4043; --bg-hover: #5f6368;
+      --text-main: #e8eaed; --text-muted: #9aa0a6;
+      --primary: #8ab4f8; --danger: #ea4335;
+      --control-bg: #3c4043; --control-hover: #4a4d51;
       --font-family: "Google Sans", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font-family); -webkit-tap-highlight-color: transparent; }
     
-    /* LAYOUT BLINDATO: Nessuno scorrimento, barra fissa in basso */
-    html, body {
-      background: var(--bg-dark); color: var(--text-main);
-      width: 100vw; height: 100vh; height: 100dvh;
-      overflow: hidden; display: block; position: relative;
+    /* GABBIA GRAFICA BLINDATA: Impedisce al layout di "esplodere" */
+    html, body { 
+      background: var(--bg-dark); color: var(--text-main); 
+      height: 100vh; height: 100dvh; width: 100vw; 
+      display: flex; flex-direction: column; overflow: hidden; 
     }
-
+    
     .material-symbols-rounded { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; font-size: 24px; }
 
-    /* OVERLAY INIZIALE OBBLIGATORIO (Sblocca Media Mobile) */
-    #startOverlay {
-      position: absolute; inset: 0; background: var(--bg-dark); z-index: 1000;
-      display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px;
-    }
-    .start-box {
-      background: var(--bg-panel); border-radius: 12px; padding: 24px; text-align: center;
-      width: 100%; max-width: 320px; display: flex; flex-direction: column; gap: 16px;
-    }
-    .btn-start {
-      background: var(--primary); color: #000; font-weight: bold; border: none; padding: 12px;
-      border-radius: 24px; font-size: 16px; cursor: pointer;
-    }
+    #startOverlay { position: fixed; inset: 0; background: var(--bg-dark); z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; text-align: center; }
+    .start-box { background: var(--bg-panel); border-radius: 16px; padding: 32px 24px; max-width: 340px; width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 16px; align-items: center; }
 
-    /* TOAST NOTIFICATIONS */
-    #toastContainer {
-      position: absolute; bottom: 90px; left: 50%; transform: translateX(-50%); z-index: 999;
-      display: flex; flex-direction: column-reverse; gap: 8px; pointer-events: none; width: 90%; max-width: 400px;
-    }
-    .toast {
-      background: #333; color: #fff; padding: 10px 16px; border-radius: 8px; font-size: 13px; text-align: center;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.5); animation: fade 3s forwards;
-    }
-    @keyframes fade { 0% { opacity: 0; transform: translateY(10px); } 10% { opacity: 1; transform: translateY(0); } 90% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; } }
+    #toastContainer { position: fixed; bottom: 90px; left: 20px; z-index: 300; display: flex; flex-direction: column-reverse; gap: 8px; pointer-events: none; }
+    .toast { background: #3c4043; color: #e8eaed; padding: 10px 16px; border-radius: 4px; font-size: 14px; font-weight: 500; box-shadow: 0 1px 3px rgba(0,0,0,0.3); display: flex; align-items: center; gap: 12px; animation: slideInLeft 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards, fadeOut 0.3s 3.5s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+    @keyframes slideInLeft { from { transform: translateX(-20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    @keyframes fadeOut { to { opacity: 0; } }
 
-    /* KNOCK PROMPT (Ospite bussa) */
-    .knock-prompt {
-      position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: #3c4043; color: #fff;
-      padding: 16px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 1000; width: 300px;
-      display: flex; flex-direction: column; gap: 12px;
-    }
-    .knock-btns { display: flex; justify-content: flex-end; gap: 8px; }
-    .btn-knock { background: transparent; color: var(--primary); border: none; font-weight: bold; padding: 6px 12px; cursor: pointer; }
-    .btn-knock.reject { color: var(--danger); }
+    .knock-prompt { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #3c4043; color: #fff; padding: 18px 24px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 400; width: 340px; animation: slideDown 0.3s ease; display: flex; flex-direction: column; gap: 16px; }
+    @keyframes slideDown { from { transform: translate(-50%, -20px); opacity:0; } to { transform: translate(-50%, 0); opacity:1; } }
+    .btn-knock { background: transparent; color: #8ab4f8; border: none; padding: 8px 16px; border-radius: 4px; font-size: 14px; font-weight: 500; cursor: pointer; transition: background 0.2s; }
+    .btn-knock:hover { background: rgba(138, 180, 248, 0.08); }
+    .btn-knock.reject { color: #f28b82; }
 
-    #waitingScreen {
-      display: none; position: absolute; inset: 0; background: var(--bg-dark); z-index: 250;
-      flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 24px;
-    }
-    .spinner { border: 4px solid rgba(255,255,255,0.2); border-top-color: #fff; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 20px; }
+    #waitingScreen { display: none; position: fixed; inset: 0; background: var(--bg-dark); z-index: 250; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 24px; }
+    .wait-spinner { width: 48px; height: 48px; border: 4px solid rgba(138, 180, 248, 0.3); border-top-color: #8ab4f8; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 24px; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* GREEN ROOM (Pre-Join) */
-    #greenRoom { display: none; position: absolute; inset: 0; background: var(--bg-dark); z-index: 200; overflow-y: auto; padding: 20px; padding-bottom: 100px; }
-    .gr-video-wrap { width: 100%; max-width: 600px; margin: 0 auto 20px auto; background: #000; border-radius: 12px; overflow: hidden; position: relative; aspect-ratio: 16/9; }
+    #greenRoom { display: none; position: fixed; inset: 0; background: #202124; z-index: 200; flex-direction: column; padding: 24px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    .gr-header { font-size: 22px; font-weight: 400; color: #e8eaed; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+    .gr-content { display: flex; flex: 1; gap: 32px; max-width: 1000px; margin: 0 auto; width: 100%; align-items: center; justify-content: center; padding-bottom: 40px; }
+    .gr-video-wrap { flex: 1.2; position: relative; background: #000; border-radius: 8px; overflow: hidden; aspect-ratio: 16/9; box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 2px 6px 2px rgba(60,64,67,0.15); width: 100%; }
     .gr-video-wrap video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
-    .gr-controls { position: absolute; bottom: 10px; left: 0; right: 0; display: flex; justify-content: center; gap: 12px; }
-    .gr-form { max-width: 400px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
-    .gr-input { background: transparent; border: 1px solid #5f6368; color: #fff; padding: 12px; border-radius: 6px; font-size: 16px; outline: none; }
-    .gr-input:focus { border-color: var(--primary); }
-    .gr-btn-join { background: var(--primary); color: #000; font-weight: bold; border: none; padding: 12px; border-radius: 24px; font-size: 16px; cursor: pointer; }
-    .guest-badge { background: var(--danger); padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; display: none; margin-left: auto; width: fit-content; }
+    .gr-controls-overlay { position: absolute; bottom: 16px; left: 0; right: 0; display: flex; justify-content: center; gap: 16px; }
+    .gr-mic-meter { position: absolute; top: 16px; left: 16px; display: flex; align-items: center; gap: 6px; background: rgba(32, 33, 36, 0.6); padding: 4px 8px; border-radius: 4px; }
+    .gr-mic-dots { display: flex; gap: 3px; }
+    .gr-mic-dot { width: 4px; height: 4px; border-radius: 50%; background: #81c995; opacity: 0.3; transition: all 0.1s ease; }
+    .gr-sidebar { flex: 0.8; display: flex; flex-direction: column; gap: 24px; width: 100%; }
+    .gr-title { font-size: 28px; font-weight: 400; color: #e8eaed; margin-bottom: 8px; }
+    .gr-input-group { display: flex; flex-direction: column; gap: 8px; }
+    .gr-label { font-size: 14px; color: #9aa0a6; font-weight: 500; }
+    .gr-input { background: transparent; border: 1px solid #5f6368; border-radius: 4px; color: #e8eaed; padding: 12px 14px; font-size: 16px; outline: none; transition: border-color 0.2s; }
+    .gr-input:focus { border-color: #8ab4f8; border-width: 2px; padding: 11px 13px; }
+    .gr-btn-join { background: #8ab4f8; color: #202124; border: none; border-radius: 24px; padding: 12px 24px; font-size: 15px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; width: fit-content; transition: background 0.2s, box-shadow 0.2s; }
+    .gr-btn-present { background: transparent; color: #8ab4f8; border: none; font-size: 15px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 24px; }
+    .guest-badge { background: #ea4335; color: white; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; display: none; }
+    
+    @media (max-width: 900px) { 
+      #greenRoom { padding: 16px; } .gr-content { flex-direction: column; justify-content: flex-start; gap: 16px; } 
+      .gr-video-wrap { max-height: 40vh; flex: none; } .gr-sidebar { flex: none; align-items: stretch; text-align: center; gap: 16px; } 
+      .gr-btn-join { width: 100%; } .gr-title { font-size: 22px; } 
+    }
 
     /* =========================================================
-       MAIN WORKSPACE (Layout Fisso e Robusto)
+       MAIN MEETING WORKSPACE (Layout Invincibile)
        ========================================================= */
-    #mainMeeting { display: none; position: absolute; inset: 0; padding-bottom: 80px; /* Spazio per la bottom bar */ flex-direction: row; }
+    #mainMeeting { display: none; flex: 1; flex-direction: column; position: relative; min-height: 0; }
+    #mainWorkspace { flex: 1; display: flex; flex-direction: row; overflow: hidden; position: relative; min-height: 0; }
     
-    /* AREA VIDEO */
-    #videoArea {
-      flex: 1; display: flex; flex-wrap: wrap; gap: 12px; padding: 12px; justify-content: center; align-content: center; overflow: hidden;
+    /* AREA VIDEO BLINDATA */
+    .video-area { 
+      flex: 1; display: flex; padding: 16px; gap: 16px; 
+      justify-content: center; align-items: center; 
+      min-height: 0; min-width: 0; /* Impedisce espansione infinita */
     }
-    .video-cell {
-      position: relative; background: #000; border-radius: 8px; overflow: hidden;
-      flex: 1 1 400px; max-width: 100%; max-height: 100%; display: flex; align-items: center; justify-content: center;
+    .video-grid { 
+      display: flex; flex-direction: row; width: 100%; height: 100%; gap: 16px; 
+      justify-content: center; align-items: center; 
+    }
+    
+    /* Side-by-side mode (Host PC quando apre la lavagna) */
+    .video-area.side-by-side { flex: none; width: 300px; padding-right: 0; }
+    .video-area.side-by-side .video-grid { flex-direction: column; }
+    
+    .video-cell { 
+      flex: 1 1 0; min-width: 0; min-height: 0; width: 100%; height: 100%; 
+      background: #000; border-radius: 8px; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; 
     }
     .video-cell video { width: 100%; height: 100%; object-fit: contain; }
     .video-cell video.mirror { transform: scaleX(-1); }
     
-    .name-badge { position: absolute; bottom: 10px; left: 10px; background: rgba(0,0,0,0.6); padding: 4px 8px; border-radius: 4px; font-size: 12px; display: flex; align-items: center; gap: 6px; z-index: 10; }
-    .mic-off-icon { color: var(--danger); font-size: 16px !important; display: none; }
-    
-    .avatar-overlay { position: absolute; inset: 0; background: var(--bg-panel); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 5; }
-    .avatar-circle { width: 60px; height: 60px; border-radius: 50%; background: var(--primary); color: #000; display: flex; align-items: center; justify-content: center; font-size: 24px; }
+    .name-badge { position: absolute; bottom: 16px; left: 16px; background: rgba(0,0,0,0.6); color: #fff; padding: 4px 10px; border-radius: 4px; font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 8px; z-index: 10; }
+    .mic-badge { display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; background: rgba(0,0,0,0.6); }
+    .mic-badge.muted { background: #ea4335; }
+    .mic-badge .material-symbols-rounded { font-size: 16px; }
+    .avatar-overlay { position: absolute; inset: 0; background: #3c4043; display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 5; }
+    .avatar-circle { width: 80px; height: 80px; border-radius: 50%; background: #8ab4f8; color: #202124; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 400; margin-bottom: 12px; }
 
-    /* AREA LAVAGNA (Inizialmente nascosta) */
-    #boardPanel {
-      display: none; width: 0; background: #fff; flex-direction: column; border-left: 1px solid #ccc;
-    }
-    #boardPanel.active { display: flex; width: 60%; }
-    
-    .board-header { background: #f1f3f4; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; color: #000; border-bottom: 1px solid #ccc; }
-    .board-tools { display: flex; gap: 4px; padding: 8px; background: #fff; border-bottom: 1px solid #eee; overflow-x: auto; }
-    .tool-btn { background: #f1f3f4; border: none; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #333; flex-shrink: 0; }
-    .tool-btn.active { background: #d2e3fc; color: #1a73e8; }
-    
-    .canvas-wrap { flex: 1; position: relative; overflow: hidden; background: #fff; cursor: crosshair; touch-action: none; }
+    /* LAVAGNA */
+    #boardPanel { display: none; flex: 1; background: #ffffff; border-radius: 8px; margin: 16px; position: relative; box-shadow: 0 1px 3px rgba(0,0,0,0.12); flex-direction: column; overflow: hidden; min-width: 0; }
+    #boardPanel.active { display: flex; }
+    .board-header-meet { height: 48px; border-bottom: 1px solid #dadce0; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; background: #f8f9fa; color: #3c4043; }
+    .board-title { font-size: 16px; font-weight: 500; display: flex; align-items: center; gap: 8px; }
+    .board-actions { display: flex; align-items: center; gap: 8px; }
+    .board-btn-icon { background: transparent; border: none; color: #5f6368; cursor: pointer; padding: 8px; border-radius: 50%; display: flex; }
+    .board-btn-icon:hover { background: #e8eaed; }
+    .board-body { flex: 1; display: flex; position: relative; }
+    .board-toolbar-float { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); background: #fff; border-radius: 8px; box-shadow: 0 1px 3px 0 rgba(60,64,67,0.3); display: flex; flex-direction: column; padding: 8px 4px; gap: 4px; z-index: 10; }
+    .btf-btn { width: 36px; height: 36px; border-radius: 50%; border: none; background: transparent; color: #5f6368; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
+    .btf-btn:hover { background: #f1f3f4; }
+    .btf-btn.active { background: #e8f0fe; color: #1a73e8; }
+    .canvas-wrap { flex: 1; position: relative; cursor: crosshair; touch-action: none; overflow: hidden; background: #ffffff; }
     canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
 
-    /* BOTTOM BAR (Assolutamente fissata in basso) */
-    .bottom-bar {
-      position: absolute; bottom: 0; left: 0; right: 0; height: 80px; background: var(--bg-dark);
-      display: flex; align-items: center; justify-content: center; gap: 12px; border-top: 1px solid var(--border); z-index: 100;
-      padding: 0 12px; overflow-x: auto;
-    }
+    /* BOTTOM BAR FISSA IN BASSO */
+    .bottom-bar { height: 80px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; background: var(--bg-dark); z-index: 40; border-top: 1px solid var(--border); }
+    .bb-left { flex: 1; display: flex; align-items: center; gap: 16px; color: #e8eaed; font-size: 16px; font-weight: 500; }
+    .time-display { font-variant-numeric: tabular-nums; }
+    .bb-center { display: flex; align-items: center; justify-content: center; gap: 12px; }
+    .bb-right { flex: 1; display: flex; align-items: center; justify-content: flex-end; gap: 12px; }
+    .ctrl-btn { width: 48px; height: 48px; border-radius: 50%; border: none; background: var(--control-bg); color: var(--text-main); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.2s; position: relative; flex-shrink: 0; }
+    .ctrl-btn:hover { background: var(--control-hover); }
+    .ctrl-btn.off { background: var(--danger); color: #fff; }
+    .ctrl-btn.active { background: #8ab4f8; color: #202124; }
+    .ctrl-btn.hangup { background: var(--danger); width: 56px; height: 40px; border-radius: 20px; }
+    .ctrl-btn.hangup:hover { background: #d93025; }
+    .badge { position: absolute; top: -2px; right: -2px; background: #8ab4f8; color: #202124; font-size: 10px; font-weight: bold; width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s; }
+    .badge.show { opacity: 1; }
+
+    /* REAZIONI E MODAL */
+    .reaction-container { position: absolute; bottom: 90px; left: 50%; transform: translateX(-50%); pointer-events: none; z-index: 100; display: flex; gap: 10px; }
+    .fly-reaction { font-size: 32px; animation: flyUp 2s cubic-bezier(0.25, 1, 0.5, 1) forwards; position: absolute; bottom: 0; }
+    @keyframes flyUp { 0% { transform: translateY(0) scale(0.5); opacity: 0; } 20% { opacity: 1; transform: translateY(-40px) scale(1.2); } 80% { opacity: 1; transform: translateY(-120px) scale(1); } 100% { transform: translateY(-160px) scale(0.8); opacity: 0; } }
+    .reactions-menu { position: absolute; bottom: 90px; left: 50%; transform: translateX(-50%); background: #3c4043; border-radius: 24px; padding: 8px 16px; display: flex; gap: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); display: none; z-index: 50; }
+    .reactions-menu.open { display: flex; }
+    .react-btn { background: transparent; border: none; font-size: 24px; cursor: pointer; transition: transform 0.2s; }
+    .react-btn:hover { transform: scale(1.3); }
+
+    .info-modal { position: absolute; bottom: 90px; left: 24px; background: #fff; color: #202124; border-radius: 8px; padding: 16px; width: 320px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: none; z-index: 50; flex-direction: column; gap: 16px; }
+    .info-modal.open { display: flex; }
+    .info-link-box { background: #f1f3f4; padding: 10px; border-radius: 4px; font-size: 13px; font-family: monospace; word-break: break-all; }
+    .btn-primary-small { background: #1a73e8; color: #fff; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px; }
     
-    .ctrl-btn {
-      width: 50px; height: 50px; border-radius: 50%; border: none; background: var(--control-bg); color: #fff;
-      display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0;
-    }
-    .ctrl-btn.off { background: var(--danger); }
-    .ctrl-btn.active { background: var(--primary); color: #000; }
-    .ctrl-btn.hangup { background: var(--danger); width: 64px; border-radius: 25px; }
-
-    /* MODAL PARTECIPANTI / INFO */
-    .modal-box {
-      position: absolute; bottom: 90px; right: 10px; width: 300px; background: #fff; color: #000; border-radius: 8px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.3); display: none; flex-direction: column; z-index: 200; overflow: hidden; max-height: calc(100vh - 110px);
-    }
-    .modal-box.open { display: flex; }
-    .modal-header { padding: 12px 16px; border-bottom: 1px solid #ccc; font-weight: bold; display: flex; justify-content: space-between; }
-    .modal-content { padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
-
-    .person-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
-    .person-actions { display: flex; gap: 8px; }
-    .action-icon { background: #f1f3f4; border-radius: 50%; padding: 6px; cursor: pointer; font-size: 18px !important; }
-    .action-icon.danger { color: var(--danger); }
+    .people-modal { position: absolute; bottom: 90px; right: 24px; background: #fff; color: #202124; border-radius: 8px; width: 320px; max-height: calc(100vh - 120px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: none; flex-direction: column; z-index: 50; overflow: hidden; }
+    .people-modal.open { display: flex; }
+    .people-header { padding: 16px; border-bottom: 1px solid #e8eaed; font-size: 16px; font-weight: 500; display: flex; justify-content: space-between; align-items: center; }
+    .people-list { flex: 1; overflow-y: auto; padding: 8px 0; }
+    .person-item { display: flex; align-items: center; padding: 8px 16px; gap: 12px; }
+    .person-item:hover { background: #f8f9fa; }
+    .person-avatar { width: 32px; height: 32px; border-radius: 50%; background: #8ab4f8; display: flex; align-items: center; justify-content: center; font-size: 14px; color: #202124; }
+    .person-info { flex: 1; display: flex; flex-direction: column; }
+    .person-name { font-size: 14px; font-weight: 500; }
+    .person-sub { font-size: 12px; color: #5f6368; }
+    .action-icon { color: #5f6368; cursor: pointer; font-size: 20px !important; padding: 6px; border-radius: 50%; background: transparent; transition: background 0.2s, color 0.2s; }
+    .action-icon:hover { background: #e8eaed; color: #202124; }
+    .action-icon.danger { color: #d93025; }
+    .action-icon.danger:hover { background: #fce8e6; }
 
     /* ==============================================================
-       RESPONSIVE SMARTPHONE (Struttura verticale)
+       FIX SMARTPHONE - Layout Adattivo
        ============================================================== */
     @media (max-width: 900px) {
-      #mainMeeting { flex-direction: column; }
-      #boardPanel.active { width: 100%; flex: 1; border-left: none; border-top: 1px solid #ccc; }
+      /* Se la lavagna è aperta su mobile, i video si impilano sopra in uno spazio limitato */
+      #mainWorkspace.board-active { flex-direction: column; }
+      #mainWorkspace.board-active .video-area { flex: none; height: 160px; width: 100%; padding: 8px; }
       
-      /* Se la lavagna è aperta su mobile, riduciamo drasticamente l'area video in alto */
-      #mainMeeting.board-is-open #videoArea { flex: none; height: 140px; padding: 4px; gap: 4px; }
-      #mainMeeting.board-is-open .video-cell { flex: 1; }
-      
-      .bottom-bar { justify-content: flex-start; } /* Scorrimento orizzontale bottoni */
-      .modal-box { right: 50%; transform: translateX(50%); width: 90%; }
+      .bottom-bar { padding: 0 12px; } .bb-left { display: none; } .bb-right { gap: 4px; } .bb-center { gap: 6px; flex: 1; justify-content: center; } .ctrl-btn { width: 44px; height: 44px; }
+      .info-modal, .people-modal { width: calc(100% - 24px); left: 12px; right: 12px; bottom: 85px; }
+      #boardPanel { margin: 0 8px 8px 8px !important; }
     }
   </style>
 </head>
 <body>
-
-  <!-- OVERLAY INIZIALE (Fix Autoplay) -->
   <div id="startOverlay">
     <div class="start-box">
       <span class="material-symbols-rounded" style="font-size:48px; color:#8ab4f8;">videocam</span>
-      <h1 style="font-size:20px;">MeetStudio v16</h1>
-      <p style="font-size:14px; color:#9aa0a6;">Tocca il pulsante per sbloccare la fotocamera e l'audio.</p>
+      <h1 style="font-size:20px; font-weight:500;">MeetStudio v17</h1>
+      <p style="font-size:14px; color:#9aa0a6;">Tocca qui sotto per abilitare la fotocamera e l'audio ed entrare nella sala d'attesa.</p>
       <button class="btn-start" onclick="startAppInit()">Inizia ora</button>
     </div>
   </div>
 
   <div id="toastContainer"></div>
 
-  <!-- SCHERMATA ATTESA -->
   <div id="waitingScreen">
-    <div class="spinner"></div>
-    <h2>Chiedi di partecipare...</h2>
-    <p>In attesa dell'organizzatore.</p>
+    <div class="wait-spinner"></div>
+    <h2 style="font-size: 22px; margin-bottom: 12px; font-weight: 400;">Chiedi di partecipare...</h2>
+    <p style="color: #9aa0a6; font-size: 15px;">In attesa che l'organizzatore ti faccia entrare nella riunione.</p>
   </div>
 
-  <!-- GREEN ROOM -->
   <div id="greenRoom">
     <div class="gr-header">
-      <span style="font-size: 20px;">MeetStudio</span>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span class="material-symbols-rounded" style="color: #8ab4f8;">videocam</span>
+        <span style="font-weight: 500;">MeetStudio</span>
+      </div>
       <div class="guest-badge" id="guestBadgeIndicator">Ospite</div>
     </div>
     
-    <div class="gr-video-wrap">
-      <video id="previewVideo" autoplay muted playsinline></video>
-      <div id="previewCamOff" class="avatar-overlay"><div class="avatar-circle" id="previewAvatar">T</div></div>
-      <div class="gr-controls">
-        <button class="ctrl-btn" id="btnPreviewMic" onclick="toggleLocalMic()"><span class="material-symbols-rounded">mic</span></button>
-        <button class="ctrl-btn" id="btnPreviewCam" onclick="toggleLocalCam()"><span class="material-symbols-rounded">videocam</span></button>
-        <button class="ctrl-btn" onclick="switchLocalCamera()"><span class="material-symbols-rounded">flip_camera_ios</span></button>
+    <div class="gr-content">
+      <div class="gr-video-wrap">
+        <video id="previewVideo" autoplay muted playsinline></video>
+        <div id="previewCamOff" class="avatar-overlay" style="display:none;">
+          <div class="avatar-circle" id="previewAvatar">T</div>
+          <div style="color:#e8eaed;">Fotocamera disattivata</div>
+        </div>
+        <div class="gr-mic-meter">
+          <span class="material-symbols-rounded" style="font-size: 16px; color: #81c995;" id="previewMicIcon">mic</span>
+          <div class="gr-mic-dots" id="previewMicDots">
+            <div class="gr-mic-dot"></div><div class="gr-mic-dot"></div><div class="gr-mic-dot"></div>
+          </div>
+        </div>
+        <div class="gr-controls-overlay">
+          <button class="ctrl-btn" id="btnPreviewMic" onclick="toggleLocalMic()">
+            <span class="material-symbols-rounded">mic</span>
+          </button>
+          <button class="ctrl-btn" id="btnPreviewCam" onclick="toggleLocalCam()">
+            <span class="material-symbols-rounded">videocam</span>
+          </button>
+          <button class="ctrl-btn" onclick="switchLocalCamera()" title="Gira Fotocamera">
+            <span class="material-symbols-rounded">flip_camera_ios</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="gr-sidebar">
+        <div class="gr-title">Pronto a partecipare?</div>
+        <div class="gr-input-group">
+          <label class="gr-label">Il tuo nome</label>
+          <input type="text" id="userNameInput" class="gr-input" placeholder="Es. Marco Rossi" oninput="updateAvatar()" />
+        </div>
+        <div class="gr-input-group" style="margin-bottom: 8px;">
+          <label class="gr-label">Codice Stanza o Link</label>
+          <input type="text" id="roomInput" class="gr-input" value="AULA-101" />
+        </div>
+        <div style="display:flex; flex-direction:column; gap:12px; align-items:center;">
+          <button class="gr-btn-join" id="btnJoin" onclick="joinMeeting()">Partecipa come Organizzatore</button>
+          <button class="gr-btn-present" id="btnPresentInfo" onclick="openInviteModalFromGR()">
+            <span class="material-symbols-rounded">share</span> Condividi info per partecipare
+          </button>
+        </div>
       </div>
     </div>
-
-    <div class="gr-form">
-      <input type="text" id="userNameInput" class="gr-input" placeholder="Il tuo nome" oninput="updateAvatar()" />
-      <input type="text" id="roomInput" class="gr-input" value="AULA-101" />
-      <button class="gr-btn-join" id="btnJoin" onclick="joinMeeting()">Partecipa come Organizzatore</button>
-      <button class="gr-btn-join" id="btnPresentInfo" style="background:#3c4043; color:#fff;" onclick="copyInviteLink()">Copia link d'invito</button>
-    </div>
   </div>
+
 
   <!-- MAIN MEETING -->
   <div id="mainMeeting">
     
-    <!-- AREA VIDEO -->
-    <div id="videoArea">
-      <div class="video-cell" id="localVideoCell">
-        <video id="localVideo" autoplay muted playsinline class="mirror"></video>
-        <div id="localCamOffOverlay" class="avatar-overlay"><div class="avatar-circle" id="localAvatar">T</div></div>
-        <div class="name-badge">
-          <span id="localNameBadge">Tu</span>
-          <span class="material-symbols-rounded mic-off-icon" id="localMicBadge">mic_off</span>
+    <div id="mainWorkspace">
+      <div class="video-area" id="videoArea">
+        <div class="video-grid" id="videoGrid">
+          <div class="video-cell" id="localVideoCell">
+            <video id="localVideo" autoplay muted playsinline class="mirror"></video>
+            <div id="localCamOffOverlay" class="avatar-overlay"><div class="avatar-circle" id="localAvatar">T</div></div>
+            <div class="name-badge">
+              <span id="localNameBadge">Tu</span>
+              <div class="mic-badge" id="localMicBadge" style="display:none;"><span class="material-symbols-rounded">mic_off</span></div>
+            </div>
+          </div>
         </div>
       </div>
-      <!-- Il video remoto verrà aggiunto qui dinamicamente -->
+
+      <div id="boardPanel">
+        <div class="board-header-meet">
+          <div class="board-title">
+            <span class="material-symbols-rounded" style="color: #fbbc04;">draw</span> Lavagna
+          </div>
+          <div class="board-actions">
+            <button class="board-btn-icon" onclick="clearBoard(true)"><span class="material-symbols-rounded">delete</span></button>
+            <div style="width:1px; height:24px; background:#dadce0; margin:0 4px;"></div>
+            <button class="board-btn-icon" onclick="toggleBoard()"><span class="material-symbols-rounded">close</span></button>
+          </div>
+        </div>
+        <div class="board-body">
+          <div class="board-toolbar-float">
+            <button class="btf-btn active" data-tool="pen" onclick="setTool('pen')" title="Penna (P)"><span class="material-symbols-rounded">edit</span></button>
+            <button class="btf-btn" data-tool="highlighter" onclick="setTool('highlighter')" title="Evidenziatore"><span class="material-symbols-rounded">format_ink_highlighter</span></button>
+            <button class="btf-btn" data-tool="eraser" onclick="setTool('eraser')" title="Gomma"><span class="material-symbols-rounded">ink_eraser</span></button>
+          </div>
+          <div class="canvas-wrap" id="canvasWrap">
+            <canvas id="boardCanvas"></canvas>
+            <div id="remoteCursor" class="remote-cursor"><div class="remote-cursor-dot"></div></div>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <!-- LAVAGNA -->
-    <div id="boardPanel">
-      <div class="board-header">
-        <strong>Lavagna</strong>
-        <span class="material-symbols-rounded" style="cursor:pointer;" onclick="toggleBoard(false)">close</span>
+    <div id="reactionContainer" class="reaction-container"></div>
+    <div id="reactionsMenu" class="reactions-menu">
+      <button class="react-btn" onclick="sendReaction('💖')">💖</button>
+      <button class="react-btn" onclick="sendReaction('👍')">👍</button>
+      <button class="react-btn" onclick="sendReaction('🎉')">🎉</button>
+    </div>
+
+    <div class="bottom-bar">
+      <div class="bb-left">
+        <span class="time-display" id="timeDisplay">10:00</span>
+        <div style="width:1px; height:16px; background:#5f6368;"></div>
+        <span id="bbRoomName" style="cursor:pointer;" onclick="toggleInfoModal()">AULA-101</span>
       </div>
-      <div class="board-tools">
-        <button class="tool-btn active" data-tool="pen" onclick="setTool('pen')"><span class="material-symbols-rounded">edit</span></button>
-        <button class="tool-btn" data-tool="highlighter" onclick="setTool('highlighter')"><span class="material-symbols-rounded">format_ink_highlighter</span></button>
-        <button class="tool-btn" data-tool="eraser" onclick="setTool('eraser')"><span class="material-symbols-rounded">ink_eraser</span></button>
-        <button class="tool-btn" onclick="clearBoard(true)"><span class="material-symbols-rounded">delete</span></button>
+      
+      <div class="bb-center">
+        <button class="ctrl-btn" id="btnMainMic" onclick="toggleLocalMic()"><span class="material-symbols-rounded">mic</span></button>
+        <button class="ctrl-btn" id="btnMainCam" onclick="toggleLocalCam()"><span class="material-symbols-rounded">videocam</span></button>
+        <button class="ctrl-btn" id="btnHand" onclick="toggleHand()"><span class="material-symbols-rounded">front_hand</span></button>
+        <button class="ctrl-btn" onclick="toggleReactionsMenu()"><span class="material-symbols-rounded">mood</span></button>
+        <button class="ctrl-btn hangup" onclick="leaveMeeting()"><span class="material-symbols-rounded">call_end</span></button>
       </div>
-      <div class="canvas-wrap" id="canvasWrap">
-        <canvas id="boardCanvas"></canvas>
+      
+      <div class="bb-right">
+        <button class="ctrl-btn" onclick="shareLocalScreen()" title="Condividi Schermo"><span class="material-symbols-rounded">present_to_all</span></button>
+        <button class="ctrl-btn" onclick="toggleInfoModal()" title="Info"><span class="material-symbols-rounded">info</span></button>
+        <button class="ctrl-btn" onclick="togglePeopleModal()" title="Partecipanti">
+          <span class="material-symbols-rounded">group</span><div class="badge" id="peopleBadge">1</div>
+        </button>
+        <button class="ctrl-btn" id="btnBoard" onclick="toggleBoard()" title="Apri Lavagna"><span class="material-symbols-rounded">draw</span></button>
       </div>
     </div>
     
-  </div> <!-- /mainMeeting -->
+    <div id="infoModal" class="info-modal">
+      <div class="info-title">Informazioni per partecipare</div>
+      <div class="info-link-box" id="infoLinkText">https://...</div>
+      <button class="btn-primary-small" onclick="copyInviteLink()"><span class="material-symbols-rounded" style="font-size:18px;">content_copy</span> Copia link</button>
+    </div>
 
-  <!-- BOTTOM BAR FISSA -->
-  <div class="bottom-bar" id="bottomBar">
-    <button class="ctrl-btn" id="btnMainMic" onclick="toggleLocalMic()"><span class="material-symbols-rounded">mic</span></button>
-    <button class="ctrl-btn" id="btnMainCam" onclick="toggleLocalCam()"><span class="material-symbols-rounded">videocam</span></button>
-    <button class="ctrl-btn" id="btnBoard" onclick="toggleBoard()"><span class="material-symbols-rounded">draw</span></button>
-    <button class="ctrl-btn" onclick="toggleModal('peopleModal')"><span class="material-symbols-rounded">group</span></button>
-    <button class="ctrl-btn" onclick="shareLocalScreen()"><span class="material-symbols-rounded">present_to_all</span></button>
-    <button class="ctrl-btn" onclick="copyInviteLink()"><span class="material-symbols-rounded">share</span></button>
-    <button class="ctrl-btn hangup" onclick="window.location.reload()"><span class="material-symbols-rounded">call_end</span></button>
-  </div>
-
-  <!-- MODAL PARTECIPANTI (Gestione Controllo Remoto Infallibile) -->
-  <div id="peopleModal" class="modal-box">
-    <div class="modal-header">Partecipanti <span class="material-symbols-rounded" style="cursor:pointer;" onclick="toggleModal('peopleModal')">close</span></div>
-    <div class="modal-content">
-      <div class="person-row">
-        <span>Tu (Host)</span>
-      </div>
-      <div class="person-row" id="remotePersonItem" style="display:none;">
-        <span id="listNameRemote">Ospite</span>
-        <div class="person-actions" id="hostActions" style="display:none;">
-          <!-- Tasti Host per comandare l'Ospite -->
-          <span class="material-symbols-rounded action-icon" id="hostCtrlMic" onclick="hostToggleRemoteMic()">mic</span>
-          <span class="material-symbols-rounded action-icon" id="hostCtrlCam" onclick="hostToggleRemoteCam()">videocam</span>
+    <!-- MODAL PARTECIPANTI & CONTROLLI HOST -->
+    <div id="peopleModal" class="people-modal">
+      <div class="people-header">Partecipanti<span class="material-symbols-rounded" style="cursor:pointer;" onclick="togglePeopleModal()">close</span></div>
+      <div class="people-list" id="peopleList">
+        <div class="person-item">
+          <div class="person-avatar" id="listAvatarTu">T</div>
+          <div class="person-info"><div class="person-name"><span id="listNameTu">Tu</span></div></div>
+        </div>
+        
+        <div id="remotePersonItem" class="person-item" style="display:none; border-top:1px solid #f1f3f4; margin-top:4px;">
+          <div class="person-avatar" id="listAvatarRemote">O</div>
+          <div class="person-info"><div class="person-name" id="listNameRemote">Ospite</div></div>
+          
+          <div class="person-actions" id="hostActions" style="display:none;">
+            <!-- ICONE CONTROLLO HOST (Azione immedita e Toggle) -->
+            <span class="material-symbols-rounded action-icon" id="hostCtrlMic" onclick="hostToggleRemoteMic()" title="Muta/Smuta">mic</span>
+            <span class="material-symbols-rounded action-icon" id="hostCtrlCam" onclick="hostToggleRemoteCam()" title="Spegni/Accendi Video">videocam</span>
+          </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- =========================================================================================
-       JAVASCRIPT - LOGICA 
-       ========================================================================================= -->
   <script>
     let myName = "Tu"; let myAvatar = "T";
     let isMobileDevice = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
     let localStream = null, micEnabled = true, camEnabled = true, currentFacingMode = 'user', audioCtx = null;
-    let peer = null, dataConn = null, activeCall = null, remotePeerId = null;
-    let remoteMicIsOn = true, remoteCamIsOn = true;
+    let peer = null, dataConn = null, activeCall = null, remotePeerId = null, remoteMicIsOn = true, remoteCamIsOn = true, handRaised = false;
     
     let isHost = true; 
+    let guestKnockConnection = null;
 
-    // Toast logic
-    function showToast(text) {
+    setInterval(() => {
+      const d = new Date();
+      document.getElementById('timeDisplay').textContent = d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
+    }, 1000);
+
+    function showToast(text, icon = 'info') {
       const container = document.getElementById('toastContainer');
-      const div = document.createElement('div'); div.className = 'toast'; div.textContent = text;
-      container.appendChild(div); setTimeout(() => div.remove(), 3000);
+      const div = document.createElement('div'); div.className = 'toast';
+      div.innerHTML = `<span class="material-symbols-rounded">${icon}</span> ${text}`;
+      container.appendChild(div); setTimeout(() => div.remove(), 4000);
     }
 
-    function toggleModal(id) {
-      const modal = document.getElementById(id);
-      if(modal.classList.contains('open')) modal.classList.remove('open');
-      else {
-        document.querySelectorAll('.modal-box').forEach(m => m.classList.remove('open'));
-        modal.classList.add('open');
-      }
-    }
-
-    // INIT
     window.addEventListener('DOMContentLoaded', () => {
       const params = new URLSearchParams(window.location.search);
       const roomParam = params.get('room');
@@ -312,92 +391,143 @@
         document.getElementById('hostActions').style.display = 'flex';
       }
 
-      document.getElementById('roomInput').value = (roomParam || 'AULA-101').toUpperCase();
+      let savedRoom = null; try { savedRoom = localStorage.getItem('meetstudio_last_room'); } catch (e) {}
+      const initialRoom = (roomParam || savedRoom || 'AULA-101').toUpperCase();
+      document.getElementById('roomInput').value = initialRoom;
+      
+      let savedName = ""; try { savedName = localStorage.getItem('meetstudio_name') || ""; } catch(e){}
+      if(savedName) { document.getElementById('userNameInput').value = savedName; updateAvatar(); }
     });
 
     async function startAppInit() {
       document.getElementById('startOverlay').style.display = 'none';
       document.getElementById('greenRoom').style.display = 'flex';
-      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      if (audioCtx.state === 'suspended') await audioCtx.resume();
-      await acquireLocalMedia();
+      await acquireLocalMedia({ facingMode: currentFacingMode });
     }
 
     function updateAvatar() {
       const val = document.getElementById('userNameInput').value.trim();
-      myName = val || "Tu"; myAvatar = myName.charAt(0).toUpperCase();
+      if(val.length > 0) { myName = val; myAvatar = val.charAt(0).toUpperCase(); } 
+      else { myName = "Tu"; myAvatar = "T"; }
       document.getElementById('previewAvatar').textContent = myAvatar;
       document.getElementById('localAvatar').textContent = myAvatar;
+      document.getElementById('listAvatarTu').textContent = myAvatar;
+      document.getElementById('listNameTu').textContent = myName + (isHost ? " (Host)" : " (Tu)");
     }
 
-    // MEDIA
-    async function acquireLocalMedia() {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: currentFacingMode },
-          audio: { echoCancellation: true, noiseSuppression: true }
-        });
-        if(localStream) localStream.getTracks().forEach(t => t.stop());
-        localStream = stream;
-        
-        document.getElementById('previewVideo').srcObject = localStream;
-        document.getElementById('localVideo').srcObject = localStream;
-        applyLocalMediaState();
+    async function ensureAudioContext() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') await audioCtx.resume();
+      return audioCtx;
+    }
 
-        if(activeCall && activeCall.peerConnection) {
-          const senders = activeCall.peerConnection.getSenders();
-          const vTrack = localStream.getVideoTracks()[0];
-          const aTrack = localStream.getAudioTracks()[0];
-          if(vTrack) { const s = senders.find(s=>s.track && s.track.kind==='video'); if(s) s.replaceTrack(vTrack); }
-          if(aTrack) { const s = senders.find(s=>s.track && s.track.kind==='audio'); if(s) s.replaceTrack(aTrack); }
-        }
-      } catch (e) { showToast("Errore fotocamera/microfono"); }
+    function createFallbackVideoTrack() {
+      const c = document.createElement('canvas'); c.width = 640; c.height = 400; const g = c.getContext('2d');
+      let t = 0;
+      setInterval(() => {
+        t += 0.05; g.fillStyle = '#202124'; g.fillRect(0, 0, c.width, c.height); g.fillStyle = '#8ab4f8'; g.beginPath(); g.arc(320 + Math.cos(t)*50, 200 + Math.sin(t)*30, 30, 0, Math.PI*2); g.fill();
+      }, 60);
+      return c.captureStream(20).getVideoTracks()[0];
+    }
+    
+    async function createFallbackAudioTrack() {
+      const ac = await ensureAudioContext(); const dst = ac.createMediaStreamDestination(); return dst.stream.getAudioTracks()[0];
+    }
+
+    async function acquireLocalMedia(opts = {}) {
+      await ensureAudioContext(); let videoTrack = null, audioTrack = null;
+      try { const aStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } }); audioTrack = aStream.getAudioTracks()[0]; } catch (e) {}
+      try { const vStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: opts.facingMode || currentFacingMode } } }); videoTrack = vStream.getVideoTracks()[0]; } catch (e) {}
+      if (!videoTrack) videoTrack = createFallbackVideoTrack();
+      if (!audioTrack) audioTrack = await createFallbackAudioTrack();
+      if (localStream) localStream.getTracks().forEach(t => t.stop());
+      localStream = new MediaStream([videoTrack, audioTrack]);
+      
+      const pv = document.getElementById('previewVideo'); pv.srcObject = localStream; pv.muted = true; pv.play().catch(()=>{});
+      const lv = document.getElementById('localVideo'); lv.srcObject = localStream; lv.muted = true; lv.play().catch(()=>{});
+      setupGreenRoomMicAnalyser(localStream);
+      applyLocalMediaState();
+      
+      if(activeCall && activeCall.peerConnection) {
+        const senders = activeCall.peerConnection.getSenders();
+        const vSender = senders.find(s => s.track && s.track.kind === 'video'); if (vSender) vSender.replaceTrack(videoTrack);
+        const aSender = senders.find(s => s.track && s.track.kind === 'audio'); if (aSender) aSender.replaceTrack(audioTrack);
+      }
     }
 
     async function switchLocalCamera() {
       currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
-      await acquireLocalMedia();
-      const vs = [document.getElementById('previewVideo'), document.getElementById('localVideo')];
-      vs.forEach(v => currentFacingMode === 'environment' ? v.classList.remove('mirror') : v.classList.add('mirror'));
+      await acquireLocalMedia({ facingMode: currentFacingMode });
+      const videos = [document.getElementById('previewVideo'), document.getElementById('localVideo')];
+      videos.forEach(v => { if(currentFacingMode === 'environment') v.classList.remove('mirror'); else v.classList.add('mirror'); });
     }
 
-    function toggleLocalMic(forceVal) { 
-      micEnabled = forceVal !== undefined ? forceVal : !micEnabled; 
-      applyLocalMediaState(); 
-      if(dataConn && dataConn.open) sendData({ type: 'telemetry', micOn: micEnabled, camOn: camEnabled, name: myName }); 
+    let grMicInterval = null;
+    async function setupGreenRoomMicAnalyser(stream) {
+      try {
+        const ac = await ensureAudioContext(); const src = ac.createMediaStreamSource(stream); const analyser = ac.createAnalyser(); analyser.fftSize = 256; src.connect(analyser);
+        const data = new Uint8Array(analyser.frequencyBinCount); const dots = document.querySelectorAll('.gr-mic-dot');
+        clearInterval(grMicInterval);
+        grMicInterval = setInterval(() => {
+          if (!micEnabled) { dots.forEach(d => { d.style.opacity = '0.3'; d.style.transform = 'scale(1)'; }); return; }
+          analyser.getByteFrequencyData(data); let sum = 0; for (let i = 0; i < data.length; i++) sum += data[i]; const avg = sum / data.length;
+          dots[0].style.transform = `scale(${1 + avg/50})`; dots[0].style.opacity = avg > 5 ? '1' : '0.4';
+          dots[1].style.transform = `scale(${1 + avg/70})`; dots[1].style.opacity = avg > 15 ? '1' : '0.4';
+          dots[2].style.transform = `scale(${1 + avg/90})`; dots[2].style.opacity = avg > 25 ? '1' : '0.4';
+        }, 80);
+      } catch (e) {}
     }
-    function toggleLocalCam(forceVal) { 
-      camEnabled = forceVal !== undefined ? forceVal : !camEnabled; 
-      applyLocalMediaState(); 
-      if(dataConn && dataConn.open) sendData({ type: 'telemetry', micOn: micEnabled, camOn: camEnabled, name: myName }); 
-    }
+
+    function toggleLocalMic() { micEnabled = !micEnabled; applyLocalMediaState(); if(dataConn && dataConn.open) sendTelemetry(); }
+    function toggleLocalCam() { camEnabled = !camEnabled; applyLocalMediaState(); if(dataConn && dataConn.open) sendTelemetry(); }
 
     function applyLocalMediaState() {
-      if (localStream) { 
-        localStream.getAudioTracks().forEach(t => t.enabled = micEnabled); 
-        localStream.getVideoTracks().forEach(t => t.enabled = camEnabled); 
-      }
+      if (localStream) { localStream.getAudioTracks().forEach(t => t.enabled = micEnabled); localStream.getVideoTracks().forEach(t => t.enabled = camEnabled); }
       const iconMic = micEnabled ? 'mic' : 'mic_off', iconCam = camEnabled ? 'videocam' : 'videocam_off';
       
-      document.getElementById('btnPreviewMic').innerHTML = `<span class="material-symbols-rounded">${iconMic}</span>`;
-      document.getElementById('btnPreviewMic').className = 'ctrl-btn ' + (micEnabled ? '' : 'off');
-      document.getElementById('btnPreviewCam').innerHTML = `<span class="material-symbols-rounded">${iconCam}</span>`;
-      document.getElementById('btnPreviewCam').className = 'ctrl-btn ' + (camEnabled ? '' : 'off');
+      const bpm = document.getElementById('btnPreviewMic'), bpc = document.getElementById('btnPreviewCam');
+      bpm.innerHTML = `<span class="material-symbols-rounded">${iconMic}</span>`; bpc.innerHTML = `<span class="material-symbols-rounded">${iconCam}</span>`;
+      bpm.className = 'ctrl-btn ' + (micEnabled ? '' : 'off'); bpc.className = 'ctrl-btn ' + (camEnabled ? '' : 'off');
       
-      document.getElementById('btnMainMic').innerHTML = `<span class="material-symbols-rounded">${iconMic}</span>`;
-      document.getElementById('btnMainMic').className = 'ctrl-btn ' + (micEnabled ? '' : 'off');
-      document.getElementById('btnMainCam').innerHTML = `<span class="material-symbols-rounded">${iconCam}</span>`;
-      document.getElementById('btnMainCam').className = 'ctrl-btn ' + (camEnabled ? '' : 'off');
+      const bmm = document.getElementById('btnMainMic'), bmc = document.getElementById('btnMainCam');
+      bmm.innerHTML = `<span class="material-symbols-rounded">${iconMic}</span>`; bmc.innerHTML = `<span class="material-symbols-rounded">${iconCam}</span>`;
+      bmm.className = 'ctrl-btn ' + (micEnabled ? '' : 'off'); bmc.className = 'ctrl-btn ' + (camEnabled ? '' : 'off');
       
       document.getElementById('previewCamOff').style.display = camEnabled ? 'none' : 'flex';
       document.getElementById('localCamOffOverlay').style.display = camEnabled ? 'none' : 'flex';
-      document.getElementById('localMicBadge').style.display = micEnabled ? 'none' : 'block';
+      document.getElementById('localMicBadge').style.display = micEnabled ? 'none' : 'flex';
+      
+      const pmIcon = document.getElementById('previewMicIcon'); pmIcon.textContent = iconMic; pmIcon.style.color = micEnabled ? '#81c995' : '#ea4335';
     }
 
-    // CONDIVISIONE SCHERMO (Ripristinata)
+
+    // ==========================================================================
+    // LOGICA HOST E GUEST
+    // ==========================================================================
+    async function joinMeeting() {
+      updateAvatar();
+      try { localStorage.setItem('meetstudio_name', myName); } catch(e){}
+      if ('wakeLock' in navigator) { try { await navigator.wakeLock.request('screen'); } catch (e) {} }
+
+      document.getElementById('greenRoom').style.display = 'none';
+      document.getElementById('bbRoomName').textContent = document.getElementById('roomInput').value.trim().toUpperCase();
+
+      if (!isHost) {
+        document.getElementById('waitingScreen').style.display = 'flex';
+        startKnocking();
+      } else {
+        document.getElementById('mainMeeting').style.display = 'flex';
+        connectAsHost();
+      }
+    }
+
+    function leaveMeeting() {
+      if(peer) peer.destroy(); window.location.reload();
+    }
+
     async function shareLocalScreen() {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
-        showToast("Condivisione schermo non supportata (usa un PC)."); return;
+        showToast("Condivisione schermo non supportata.", "error"); return;
       }
       try {
         const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
@@ -411,44 +541,26 @@
         const lv = document.getElementById('localVideo');
         lv.classList.remove('mirror');
         lv.srcObject = new MediaStream([screenTrack]);
-        
-        showToast('Stai condividendo lo schermo');
+        showToast('Stai condividendo lo schermo', 'present_to_all');
         
         screenTrack.onended = async () => { 
-          await acquireLocalMedia(); 
+          await acquireLocalMedia({ facingMode: currentFacingMode }); 
           if(currentFacingMode !== 'environment') document.getElementById('localVideo').classList.add('mirror');
         };
-      } catch (e) { showToast('Condivisione schermo annullata'); }
+      } catch (e) {}
     }
 
-
-    // ==========================================================
-    // CONNESSIONE WEBRTC E RUOLI
-    // ==========================================================
-    async function joinMeeting() {
-      updateAvatar();
-      if ('wakeLock' in navigator) { try { await navigator.wakeLock.request('screen'); } catch (e) {} }
-
-      document.getElementById('greenRoom').style.display = 'none';
-
-      if (isHost) {
-        document.getElementById('mainMeeting').style.display = 'flex';
-        connectAsHost();
-      } else {
-        document.getElementById('waitingScreen').style.display = 'flex';
-        startKnocking();
-      }
-    }
-
-    // --- HOST ---
+    // ================= HOST =================
     function connectAsHost() {
       const code = document.getElementById('roomInput').value.trim().toUpperCase();
+      try { localStorage.setItem('meetstudio_last_room', code); } catch (e) {}
+      
       if (peer) peer.destroy();
-      const hostId = `meetstudiov16-${code}-host`;
+      const hostId = `meetstudiov17-${code}-host`;
 
-      peer = new Peer(hostId, { config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] } });
+      peer = new Peer(hostId, { config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }] } });
 
-      peer.on('open', () => showToast(`Stanza ${code} creata. Invia il link.`));
+      peer.on('open', () => { showToast(`Sei l'organizzatore. Stanza creata.`, 'security'); });
 
       peer.on('connection', (conn) => {
         conn.on('data', (msg) => {
@@ -457,249 +569,324 @@
           else if (dataConn && conn.peer === dataConn.peer) { handleIncomingData(msg); }
         });
         conn.on('close', () => {
-          if (dataConn && conn.peer === dataConn.peer) { 
-            showToast(`L'ospite ha lasciato la riunione`); 
-            const rc = document.getElementById('remoteVideoCell'); if(rc) rc.remove();
-            document.getElementById('remotePersonItem').style.display = 'none';
-            dataConn = null; 
-          }
+          if (dataConn && conn.peer === dataConn.peer) { showToast(`L'ospite ha lasciato la riunione`, 'person_remove'); removeRemoteVideoCell(); dataConn = null; }
         });
       });
 
       peer.on('call', (call) => {
-        if (dataConn && call.peer === dataConn.peer) { call.answer(localStream); setupMediaCall(call); } else { call.close(); }
+        // Garantisce che il video venga accettato senza bug
+        call.answer(localStream); 
+        setupMediaCall(call);
       });
-      peer.on('error', (err) => { if (err.type === 'unavailable-id') { alert("La stanza esiste già."); window.location.reload(); } });
+
+      peer.on('error', (err) => {
+        if (err.type === 'unavailable-id') { alert("La stanza è già occupata da un organizzatore."); window.location.reload(); }
+      });
     }
 
     function showKnockPrompt(tempConn, guestName, guestPeerId) {
       const existing = document.getElementById('knockPromptBox'); if (existing) existing.remove();
       const div = document.createElement('div'); div.id = 'knockPromptBox'; div.className = 'knock-prompt';
       div.innerHTML = `
-        <div style="font-weight:bold;">Richiesta Accesso</div>
-        <div>L'utente <strong>${guestName}</strong> vuole entrare.</div>
-        <div class="knock-btns">
-          <button class="btn-knock reject" id="btnRejectKnock">Nega</button>
+        <div style="font-weight: 500; font-size:16px;">Richiesta di partecipazione</div>
+        <div style="color: #9aa0a6; font-size: 14px;">L'utente <strong>${guestName}</strong> vuole entrare nella riunione.</div>
+        <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:4px;">
+          <button class="btn-knock reject" id="btnRejectKnock">Nega accesso</button>
           <button class="btn-knock" id="btnAcceptKnock">Ammetti</button>
         </div>
       `;
       document.body.appendChild(div);
-      document.getElementById('btnRejectKnock').onclick = () => { tempConn.send({ type: 'knock-response', status: 'rejected' }); setTimeout(()=>tempConn.close(),500); div.remove(); };
-      document.getElementById('btnAcceptKnock').onclick = () => { 
-        tempConn.send({ type: 'knock-response', status: 'accepted' }); 
-        remotePeerId = guestPeerId; dataConn = tempConn; 
-        showToast(`${guestName} è entrato`); 
-        sendData({ type: 'telemetry', name: myName, micOn: micEnabled, camOn: camEnabled });
-        div.remove();
-        
-        // Auto-sincronizza lavagna (se aperta dall'Host, ordina all'ospite di aprirla)
-        setTimeout(() => {
-          if(isBoardOpen) sendData({ type: 'cmd', action: 'set-board-visibility', value: true });
-          syncFullBoardToRemote();
-        }, 1000);
-      };
+      document.getElementById('btnRejectKnock').onclick = () => answerKnock(false, div, tempConn, guestPeerId, guestName);
+      document.getElementById('btnAcceptKnock').onclick = () => answerKnock(true, div, tempConn, guestPeerId, guestName);
     }
 
-    // --- GUEST ---
+    function answerKnock(accepted, divElem, tempConn, guestPeerId, guestName) {
+      divElem.remove();
+      if (accepted) {
+        tempConn.send({ type: 'knock-response', status: 'accepted' }); remotePeerId = guestPeerId; dataConn = tempConn; 
+        showToast(`${guestName} è entrato nella stanza`, 'person_add'); sendTelemetry();
+        setTimeout(syncFullBoardToRemote, 800);
+      } else {
+        tempConn.send({ type: 'knock-response', status: 'rejected' }); setTimeout(() => tempConn.close(), 1000);
+      }
+    }
+
+    // ================= GUEST =================
     function startKnocking() {
       const code = document.getElementById('roomInput').value.trim().toUpperCase();
-      const hostId = `meetstudiov16-${code}-host`;
+      const hostId = `meetstudiov17-${code}-host`;
 
-      peer = new Peer(undefined, { config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] } });
+      peer = new Peer(undefined, { config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }] } });
 
       peer.on('open', (myId) => {
-        const guestKnockConn = peer.connect(hostId, { reliable: true });
-        guestKnockConn.on('open', () => guestKnockConn.send({ type: 'knock', name: myName, peerId: myId }));
-        guestKnockConn.on('data', (msg) => {
+        guestKnockConnection = peer.connect(hostId, { reliable: true });
+        guestKnockConnection.on('open', () => { guestKnockConnection.send({ type: 'knock', name: myName, peerId: myId }); });
+        guestKnockConnection.on('data', (msg) => {
           if (typeof msg === 'string') { try { msg = JSON.parse(msg); } catch (e) {} }
+          
           if (msg.type === 'knock-response') {
             if (msg.status === 'accepted') {
               document.getElementById('waitingScreen').style.display = 'none';
               document.getElementById('mainMeeting').style.display = 'flex';
-              dataConn = guestKnockConn; remotePeerId = hostId;
-              showToast("Sei entrato nella riunione."); 
-              sendData({ type: 'telemetry', name: myName, micOn: micEnabled, camOn: camEnabled });
-              const call = peer.call(hostId, localStream); setupMediaCall(call);
-            } else {
-              alert("Accesso negato."); window.location.reload();
+              dataConn = guestKnockConnection; remotePeerId = hostId;
+              showToast("L'organizzatore ha accettato la tua richiesta.", 'check_circle'); sendTelemetry();
+              
+              const call = peer.call(hostId, localStream); 
+              setupMediaCall(call);
+            } else if (msg.status === 'rejected') {
+              alert("L'organizzatore ha negato l'accesso."); window.location.href = window.location.pathname;
             }
-          } else if (dataConn && guestKnockConn === dataConn) { handleIncomingData(msg); }
+          } 
+          else if (dataConn && guestKnockConnection === dataConn) { handleIncomingData(msg); }
         });
+        guestKnockConnection.on('close', () => { if (dataConn) { showToast("Stanza chiusa dall'host", 'error'); removeRemoteVideoCell(); dataConn = null; } });
       });
-      peer.on('error', () => { alert("Host non trovato. Controlla il codice."); window.location.reload(); });
-      peer.on('call', (call) => { if (dataConn && call.peer === remotePeerId) { call.answer(localStream); setupMediaCall(call); } });
+
+      peer.on('error', (err) => {
+        if (err.type === 'peer-unavailable') { alert("L'organizzatore non ha ancora avviato la riunione o il codice non è corretto."); window.location.reload(); }
+      });
+
+      peer.on('call', (call) => {
+        call.answer(localStream); 
+        setupMediaCall(call);
+      });
     }
 
-    // --- VIDEO REMOTO ---
+
+    // ==========================================================================
+    // GESTIONE VIDEO E TELEMETRIA
+    // ==========================================================================
+    function createRemoteVideoCell() {
+      if(document.getElementById('remoteVideoCell')) return;
+      const grid = document.getElementById('videoGrid');
+      const cell = document.createElement('div');
+      cell.className = 'video-cell'; cell.id = 'remoteVideoCell';
+      cell.innerHTML = `
+        <video id="mainRemoteVideo" autoplay playsinline></video>
+        <div id="mainRemoteCamOff" class="avatar-overlay"><div class="avatar-circle" id="remoteAvatarMain">O</div></div>
+        <div class="name-badge"><span id="remoteNameMain">Ospite</span><div class="mic-badge muted" id="remoteMicBadge" style="display:none;"><span class="material-symbols-rounded">mic_off</span></div></div>
+      `;
+      grid.appendChild(cell);
+      
+      document.getElementById('remotePersonItem').style.display = 'flex';
+      document.getElementById('peopleBadge').textContent = '2'; document.getElementById('peopleBadge').classList.add('show');
+    }
+
+    function removeRemoteVideoCell() {
+      const cell = document.getElementById('remoteVideoCell'); if(cell) cell.remove();
+      document.getElementById('remotePersonItem').style.display = 'none';
+      document.getElementById('peopleBadge').textContent = '1'; document.getElementById('peopleBadge').classList.remove('show');
+    }
+
     function setupMediaCall(call) {
       activeCall = call;
       call.on('stream', async (remoteStream) => {
-        if(!document.getElementById('remoteVideoCell')) {
-          const cell = document.createElement('div'); cell.className = 'video-cell'; cell.id = 'remoteVideoCell';
-          cell.innerHTML = `
-            <video id="mainRemoteVideo" autoplay playsinline></video>
-            <div id="mainRemoteCamOff" class="avatar-overlay"><div class="avatar-circle" id="remoteAvatarMain">O</div></div>
-            <div class="name-badge"><span id="remoteNameMain">Ospite</span><span class="material-symbols-rounded mic-off-icon" id="remoteMicBadge">mic_off</span></div>
-          `;
-          document.getElementById('videoArea').appendChild(cell);
-          document.getElementById('remotePersonItem').style.display = 'flex';
-        }
-        await ensureAudioContext();
+        createRemoteVideoCell(); await ensureAudioContext();
         const rv = document.getElementById('mainRemoteVideo');
-        if(rv) { rv.srcObject = remoteStream; rv.muted = !remoteMicIsOn; rv.volume = remoteMicIsOn ? 1.0 : 0.0; rv.play().catch(()=>{}); }
+        if(rv) { rv.srcObject = remoteStream; rv.muted = false; rv.play().catch(()=>{}); }
       });
     }
 
-    // --- COMUNICAZIONE ---
     function sendData(payload) { if (dataConn && dataConn.open) dataConn.send(payload); }
-    
+    function sendTelemetry() { sendData({ type: 'telemetry', name: myName, micOn: micEnabled, camOn: camEnabled, hand: handRaised }); }
+
     function handleIncomingData(msg) {
       if (typeof msg === 'string') { try { msg = JSON.parse(msg); } catch (e) { return; } }
       
       if (msg.type === 'telemetry') {
         remoteMicIsOn = !!msg.micOn; remoteCamIsOn = !!msg.camOn;
+        const rName = msg.name || "Ospite", rAv = rName.charAt(0).toUpperCase();
         
-        if(document.getElementById('remoteNameMain')) document.getElementById('remoteNameMain').textContent = msg.name || "Ospite";
-        if(document.getElementById('remoteAvatarMain')) document.getElementById('remoteAvatarMain').textContent = (msg.name || "O").charAt(0).toUpperCase();
-        if(document.getElementById('listNameRemote')) document.getElementById('listNameRemote').textContent = msg.name || "Ospite";
-        
-        if(document.getElementById('mainRemoteCamOff')) document.getElementById('mainRemoteCamOff').style.display = remoteCamIsOn ? 'none' : 'flex';
-        if(document.getElementById('remoteMicBadge')) document.getElementById('remoteMicBadge').style.display = remoteMicIsOn ? 'none' : 'block';
+        const rNameEl = document.getElementById('remoteNameMain'), rAvEl = document.getElementById('remoteAvatarMain');
+        const rCamOff = document.getElementById('mainRemoteCamOff'), rMicBadge = document.getElementById('remoteMicBadge');
+        if(rNameEl) rNameEl.textContent = rName; if(rAvEl) rAvEl.textContent = rAv;
+        if(rCamOff) rCamOff.style.display = remoteCamIsOn ? 'none' : 'flex';
+        if(rMicBadge) rMicBadge.style.display = remoteMicIsOn ? 'none' : 'flex';
 
+        document.getElementById('listNameRemote').textContent = rName + (isHost ? "" : " (Host)"); document.getElementById('listAvatarRemote').textContent = rAv;
+        
+        const hostMicIco = document.getElementById('hostCtrlMic'); if(hostMicIco) { hostMicIco.textContent = remoteMicIsOn ? 'mic' : 'mic_off'; hostMicIco.className = 'material-symbols-rounded action-icon ' + (remoteMicIsOn ? '' : 'danger'); }
+        const hostCamIco = document.getElementById('hostCtrlCam'); if(hostCamIco) { hostCamIco.textContent = remoteCamIsOn ? 'videocam' : 'videocam_off'; hostCamIco.className = 'material-symbols-rounded action-icon ' + (remoteCamIsOn ? '' : 'danger'); }
+        
         const rv = document.getElementById('mainRemoteVideo');
         if(rv) { rv.muted = !remoteMicIsOn; rv.volume = remoteMicIsOn ? 1.0 : 0.0; }
 
-        if(isHost) {
-          const hm = document.getElementById('hostCtrlMic'); if(hm) { hm.textContent = remoteMicIsOn ? 'mic' : 'mic_off'; hm.className = 'material-symbols-rounded action-icon ' + (remoteMicIsOn ? '' : 'danger'); }
-          const hc = document.getElementById('hostCtrlCam'); if(hc) { hc.textContent = remoteCamIsOn ? 'videocam' : 'videocam_off'; hc.className = 'material-symbols-rounded action-icon ' + (remoteCamIsOn ? '' : 'danger'); }
-        }
-      }
-      
+        if(msg.hand && !handRaisedRemoteFlag) { showToast(`${rName} ha alzato la mano`, 'front_hand'); handRaisedRemoteFlag = true; } else if (!msg.hand) handRaisedRemoteFlag = false;
+
+      } 
       else if (msg.type === 'cmd') {
         if (msg.action === 'set-mic') { 
-          toggleLocalMic(msg.value); 
-          // Stacco hardware
-          if(activeCall && activeCall.peerConnection) activeCall.peerConnection.getSenders().forEach(s => { if(s.track && s.track.kind === 'audio') s.track.enabled = msg.value; });
-          showToast(msg.value ? 'Host ha riattivato il tuo microfono' : 'L\'organizzatore ti ha silenziato!'); 
+          setLocalMic(msg.value); 
+          if(activeCall && activeCall.peerConnection) {
+            try { activeCall.peerConnection.getSenders().forEach(s => { if(s.track && s.track.kind === 'audio') s.track.enabled = msg.value; }); } catch(e){}
+          }
+          showToast(msg.value ? 'L\'organizzatore ha riattivato il tuo microfono' : 'L\'organizzatore ti ha silenziato!', msg.value ? 'mic' : 'mic_off'); 
         }
         else if (msg.action === 'set-cam') { 
-          toggleLocalCam(msg.value); 
-          if(activeCall && activeCall.peerConnection) activeCall.peerConnection.getSenders().forEach(s => { if(s.track && s.track.kind === 'video') s.track.enabled = msg.value; });
-          showToast(msg.value ? 'Host ha riattivato il tuo video' : 'L\'organizzatore ha spento la tua webcam!'); 
+          setLocalCam(msg.value); 
+          if(activeCall && activeCall.peerConnection) {
+            try { activeCall.peerConnection.getSenders().forEach(s => { if(s.track && s.track.kind === 'video') s.track.enabled = msg.value; }); } catch(e){}
+          }
+          showToast(msg.value ? 'L\'organizzatore ha riattivato il tuo video' : 'L\'organizzatore ha spento la tua webcam!', msg.value ? 'videocam' : 'videocam_off'); 
         }
         else if (msg.action === 'set-board-visibility') {
-          // Se arriva dall'Host, l'Ospite DEVE obbedire e aprire/chiudere la lavagna
-          if(isBoardOpen !== msg.value) toggleBoard(msg.value, false);
+          if (msg.value !== isBoardOpen) toggleBoard(msg.value, false);
         }
-      }
+      } 
+      else if (msg.type === 'reaction') { showReaction(msg.emoji, false); } 
       
-      // LAVAGNA SYNC
+      // LAVAGNA
       else if (msg.type === 'draw') { drawSegment(msg.x0, msg.y0, msg.x1, msg.y1, msg.color, msg.size, msg.tool); }
-      else if (msg.type === 'clear') { clearCanvas(); }
+      else if (msg.type === 'clear') { clearBoard(false); }
+      else if (msg.type === 'page-sync') { restoreCanvasFromDataUrl(msg.dataUrl, false); }
       else if (msg.type === 'full-board-sync') { 
-        restoreCanvasFromDataUrl(msg.currentDataUrl); 
+        if (msg.isBoardOpen !== undefined && msg.isBoardOpen !== isBoardOpen) {
+          toggleBoard(msg.isBoardOpen, false);
+        }
+        restoreCanvasFromDataUrl(msg.currentDataUrl, false); 
+      }
+      else if (msg.type === 'cursor') {
+        const rc = document.getElementById('remoteCursor'); rc.style.display = 'block';
+        rc.style.left = (msg.x * canvas.width) + 'px'; rc.style.top = (msg.y * canvas.height) + 'px';
       }
     }
 
-    // --- CONTROLLO REMOTO INFALLIBILE DALL'HOST ---
+
+    // ==========================================================================
+    // CONTROLLI REMOTI DALL'HOST VERSO L'OSPITE
+    // ==========================================================================
     function hostToggleRemoteMic() {
       if(!isHost) return; 
-      remoteMicIsOn = !remoteMicIsOn; 
+      
+      const targetState = !remoteMicIsOn; 
+      remoteMicIsOn = targetState; 
+      
       const rv = document.getElementById('mainRemoteVideo');
-      if (rv) { rv.muted = !remoteMicIsOn; rv.volume = remoteMicIsOn ? 1.0 : 0.0; } // Azzeramento assoluto locale
+      if (rv) { rv.muted = !targetState; rv.volume = targetState ? 1.0 : 0.0; }
 
-      const hm = document.getElementById('hostCtrlMic'); if(hm) { hm.textContent = remoteMicIsOn ? 'mic' : 'mic_off'; hm.className = 'material-symbols-rounded action-icon ' + (remoteMicIsOn ? '' : 'danger'); }
-      const rb = document.getElementById('remoteMicBadge'); if(rb) rb.style.display = remoteMicIsOn ? 'none' : 'block';
+      const hostMicIco = document.getElementById('hostCtrlMic');
+      if (hostMicIco) { hostMicIco.textContent = targetState ? 'mic' : 'mic_off'; hostMicIco.className = 'material-symbols-rounded action-icon ' + (targetState ? '' : 'danger'); }
+      const rMicBadge = document.getElementById('remoteMicBadge');
+      if (rMicBadge) rMicBadge.style.display = targetState ? 'none' : 'flex';
 
-      sendData({ type: 'cmd', action: 'set-mic', value: remoteMicIsOn }); // Ordine di stacco hardware
-      showToast(remoteMicIsOn ? 'Audio ospite riattivato' : 'Ospite silenziato fisicamente');
+      sendData({ type: 'cmd', action: 'set-mic', value: targetState });
+      showToast(targetState ? 'Hai riattivato il microfono dell\'ospite' : 'Hai silenziato l\'ospite', targetState ? 'mic' : 'mic_off');
     }
 
     function hostToggleRemoteCam() {
       if(!isHost) return;
-      remoteCamIsOn = !remoteCamIsOn;
-      const rCamOff = document.getElementById('mainRemoteCamOff'); if (rCamOff) rCamOff.style.display = remoteCamIsOn ? 'none' : 'flex';
-      const hc = document.getElementById('hostCtrlCam'); if(hc) { hc.textContent = remoteCamIsOn ? 'videocam' : 'videocam_off'; hc.className = 'material-symbols-rounded action-icon ' + (remoteCamIsOn ? '' : 'danger'); }
+      
+      const targetState = !remoteCamIsOn;
+      remoteCamIsOn = targetState;
 
-      sendData({ type: 'cmd', action: 'set-cam', value: remoteCamIsOn });
-      showToast(remoteCamIsOn ? 'Webcam ospite riattivata' : 'Webcam ospite spenta');
+      const rCamOff = document.getElementById('mainRemoteCamOff');
+      if (rCamOff) rCamOff.style.display = targetState ? 'none' : 'flex';
+
+      const hostCamIco = document.getElementById('hostCtrlCam');
+      if (hostCamIco) { hostCamIco.textContent = targetState ? 'videocam' : 'videocam_off'; hostCamIco.className = 'material-symbols-rounded action-icon ' + (targetState ? '' : 'danger'); }
+
+      sendData({ type: 'cmd', action: 'set-cam', value: targetState });
+      showToast(targetState ? 'Hai riattivato la webcam dell\'ospite' : 'Hai spento la webcam dell\'ospite', targetState ? 'videocam' : 'videocam_off');
     }
 
-    function getInviteUrl() { return `${window.location.origin}${window.location.pathname}?room=${encodeURIComponent(document.getElementById('roomInput').value.trim())}&guest=true`; }
-    function copyInviteLink() { navigator.clipboard.writeText(getInviteUrl()); showToast('Link di invito copiato!'); }
+    // ==========================================================================
+    // INTERAZIONI E PANNELLI
+    // ==========================================================================
+    let handRaisedRemoteFlag = false;
+    function toggleHand() { handRaised = !handRaised; document.getElementById('btnHand').classList.toggle('active', handRaised); sendTelemetry(); if(handRaised) showToast('Hai alzato la mano', 'front_hand'); }
+    function toggleReactionsMenu() { document.getElementById('reactionsMenu').classList.toggle('open'); }
+    function sendReaction(emoji) { document.getElementById('reactionsMenu').classList.remove('open'); showReaction(emoji, true); sendData({ type: 'reaction', emoji }); }
+    function showReaction(emoji, isMine) {
+      const cont = document.getElementById('reactionContainer'); const div = document.createElement('div'); div.className = 'fly-reaction'; div.textContent = emoji;
+      div.style.left = `calc(50% + ${(Math.random() - 0.5) * 60}px)`; cont.appendChild(div); setTimeout(() => div.remove(), 2000);
+    }
 
-    // ==========================================================
-    // LAVAGNA & AUTO-RESIZE
-    // ==========================================================
+    function toggleInfoModal() { document.getElementById('peopleModal').classList.remove('open'); document.getElementById('infoModal').classList.toggle('open'); document.getElementById('infoLinkText').textContent = getInviteUrl(); }
+    function togglePeopleModal() { document.getElementById('infoModal').classList.remove('open'); document.getElementById('peopleModal').classList.toggle('open'); }
+    
+    function getInviteUrl() {
+      const code = document.getElementById('roomInput').value.trim().toUpperCase();
+      return `${window.location.origin}${window.location.pathname}?room=${encodeURIComponent(code)}&guest=true`;
+    }
+    function copyInviteLink() { navigator.clipboard.writeText(getInviteUrl()); showToast('Link di invito copiato negli appunti', 'link'); }
+    function openInviteModalFromGR() { copyInviteLink(); }
+
+    // ==========================================================================
+    // LAVAGNA, SYNC & SALVATAGGIO STATO
+    // ==========================================================================
     let isBoardOpen = false;
     function toggleBoard(forceState = null, emitSync = true) {
       if (forceState !== null) isBoardOpen = forceState;
       else isBoardOpen = !isBoardOpen;
 
-      const panel = document.getElementById('boardPanel');
-      const btn = document.getElementById('btnBoard');
-      const mm = document.getElementById('mainMeeting');
-
+      const panel = document.getElementById('boardPanel'), btn = document.getElementById('btnBoard'), ws = document.getElementById('mainWorkspace');
       if(isBoardOpen) { 
-        panel.classList.add('active'); btn.classList.add('active');
-        mm.classList.add('board-is-open'); 
-        
-        // Timeout fondamentale: aspetta che CSS faccia spazio, poi ridimensiona e disegna
+        panel.classList.add('active'); btn.classList.add('active'); ws.classList.add('board-active');
+        // ATTENDIAMO che CSS aggiorni le dimensioni fisiche PRIMA di fare resizeCanvas
         setTimeout(() => {
           resizeCanvas();
-          if(emitSync) {
+          if (emitSync) {
             sendData({ type: 'cmd', action: 'set-board-visibility', value: true });
-            syncFullBoardToRemote(); // Manda il disegno fresco fresco
+            syncFullBoardToRemote(); // Spara il disegno dopo che la lavagna si è aperta!
           }
-        }, 300);
-      } else { 
-        panel.classList.remove('active'); btn.classList.remove('active');
-        mm.classList.remove('board-is-open');
-        if(emitSync) sendData({ type: 'cmd', action: 'set-board-visibility', value: false });
+        }, 300); 
+      } 
+      else { 
+        panel.classList.remove('active'); btn.classList.remove('active'); ws.classList.remove('board-active');
+        if (emitSync) sendData({ type: 'cmd', action: 'set-board-visibility', value: false });
       }
     }
     
     const canvas = document.getElementById('boardCanvas'); const ctx = canvas.getContext('2d'); const wrap = document.getElementById('canvasWrap');
-    let currentTool = 'pen'; let isDrawing = false; let startX = 0, startY = 0; let lastBoardData = null;
+    let currentTool = 'pen'; let isDrawing = false; let startX = 0, startY = 0; let pagesData = []; let currentPage = 0;
     
-    function restoreCanvasFromDataUrl(dataUrl) {
-      if (!dataUrl) return;
-      lastBoardData = dataUrl; // Salva sempre in memoria, anche se chiusa
-      if (!isBoardOpen || wrap.clientWidth === 0) return; // Se chiusa, non disegnare
+    function restoreCanvasFromDataUrl(dataUrl, emitSync = false) {
+      if(!dataUrl) return;
+      pagesData[currentPage] = dataUrl; // Salvo in array in modo sicuro!
+      if (!isBoardOpen || wrap.clientWidth === 0) return; // Evita di disegnare se la UI è chiusa (causa bug neri)
       
       const img = new Image(); 
       img.onload = () => { 
-        ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height); 
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height); 
+        if (emitSync) sendData({ type: 'page-sync', page: currentPage, dataUrl: pagesData[currentPage] }); 
       }; 
       img.src = dataUrl; 
     }
-
+    
     function resizeCanvas() { 
       if (!wrap.clientWidth || !wrap.clientHeight) return; 
       canvas.width = wrap.clientWidth; canvas.height = wrap.clientHeight; 
       ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height); 
-      if (lastBoardData) restoreCanvasFromDataUrl(lastBoardData); // Se c'era roba, rimettila
+      // Se c'è un disegno in memoria, ripristinalo ora che le dimensioni sono corrette
+      if (pagesData[currentPage]) restoreCanvasFromDataUrl(pagesData[currentPage]); 
     }
     window.addEventListener('resize', resizeCanvas);
 
-    function setTool(t) { currentTool = t; document.querySelectorAll('.tool-btn').forEach(b => b.classList.toggle('active', b.dataset.tool === t)); }
+    function setTool(t) { currentTool = t; document.querySelectorAll('.btf-btn[data-tool]').forEach(b => b.classList.toggle('active', b.dataset.tool === t)); }
     function getNormPos(e) { const rect = canvas.getBoundingClientRect(); const touch = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0]); return { x: Math.max(0, Math.min(1, ((touch ? touch.clientX : e.clientX) - rect.left) / (rect.width || 1))), y: Math.max(0, Math.min(1, ((touch ? touch.clientY : e.clientY) - rect.top) / (rect.height || 1))) }; }
     function drawSegment(x0, y0, x1, y1, color, size, tool) { ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round'; if (tool === 'eraser') { ctx.strokeStyle = '#ffffff'; ctx.lineWidth = size * 4; } else if (tool === 'highlighter') { ctx.strokeStyle = color; ctx.globalAlpha = 0.28; ctx.lineWidth = size * 3; } else { ctx.strokeStyle = color; ctx.lineWidth = size; } ctx.beginPath(); ctx.moveTo(x0 * canvas.width, y0 * canvas.height); ctx.lineTo(x1 * canvas.width, y1 * canvas.height); ctx.stroke(); ctx.restore(); }
     
     canvas.addEventListener('mousedown', startDraw); canvas.addEventListener('mousemove', moveDraw); window.addEventListener('mouseup', endDraw);
     canvas.addEventListener('touchstart', (e) => { e.preventDefault(); startDraw(e); }, { passive: false }); canvas.addEventListener('touchmove', (e) => { e.preventDefault(); moveDraw(e); }, { passive: false }); canvas.addEventListener('touchend', (e) => { e.preventDefault(); endDraw(e); }, { passive: false });
-    
     function startDraw(e) { isDrawing = true; const pos = getNormPos(e); startX = pos.x; startY = pos.y; }
-    function moveDraw(e) { const pos = getNormPos(e); if (!isDrawing) return; if (['pen', 'highlighter', 'eraser'].includes(currentTool)) { drawSegment(startX, startY, pos.x, pos.y, '#3c4043', 4, currentTool); sendData({ type: 'draw', x0: startX, y0: startY, x1: pos.x, y1: pos.y, color: '#3c4043', size: 4, tool: currentTool }); startX = pos.x; startY = pos.y; } }
-    function endDraw() { isDrawing = false; lastBoardData = canvas.toDataURL('image/jpeg', 0.8); }
+    function moveDraw(e) { const pos = getNormPos(e); sendData({ type: 'cursor', x: pos.x, y: pos.y }); if (!isDrawing) return; if (['pen', 'highlighter', 'eraser'].includes(currentTool)) { drawSegment(startX, startY, pos.x, pos.y, '#3c4043', 4, currentTool); sendData({ type: 'draw', x0: startX, y0: startY, x1: pos.x, y1: pos.y, color: '#3c4043', size: 4, tool: currentTool }); startX = pos.x; startY = pos.y; } }
     
-    function clearCanvas() { ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height); lastBoardData = null; }
-    function clearBoard(emit = true) { clearCanvas(); if (emit) sendData({ type: 'clear' }); }
+    function endDraw() { 
+      isDrawing = false; 
+      // Quando stacchi la penna, salva lo stato corrente nella memoria della pagina
+      if(canvas.width > 0) pagesData[currentPage] = canvas.toDataURL('image/jpeg', 0.8); 
+    }
+    
+    function clearBoard(emit = true) { 
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height); 
+      pagesData[currentPage] = null; // Svuota la memoria della pagina
+      if (emit) sendData({ type: 'clear' }); 
+    }
     
     function syncFullBoardToRemote() { 
-      if(canvas.width > 0) lastBoardData = canvas.toDataURL('image/jpeg', 0.8); 
-      sendData({ type: 'full-board-sync', currentDataUrl: lastBoardData }); 
+      if(canvas.width > 0) pagesData[currentPage] = canvas.toDataURL('image/jpeg', 0.8); 
+      sendData({ type: 'full-board-sync', currentPage, currentDataUrl: pagesData[currentPage], isBoardOpen }); 
     }
   </script>
 </body>
