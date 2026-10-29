@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>MeetStudio v9 — Fix Accesso & Ruoli Host/Ospite</title>
+  <title>MeetStudio v10 — Fix Interfaccia & Modalità Responsive</title>
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <!-- Material Symbols -->
@@ -24,7 +24,17 @@
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font-family); -webkit-tap-highlight-color: transparent; }
-    body { background: var(--bg-dark); color: var(--text-main); height: 100dvh; width: 100vw; display: flex; flex-direction: column; overflow: hidden; }
+    
+    /* FIX CRITICO: Il body non deve nascondere le barre laterali e inferiori */
+    html, body {
+      background: var(--bg-dark);
+      color: var(--text-main);
+      height: 100vh;
+      width: 100vw;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden; /* Mantiene l'app contenuta nello schermo */
+    }
 
     .material-symbols-rounded { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; font-size: 24px; }
 
@@ -91,14 +101,56 @@
     @media (max-width: 900px) { .gr-content { flex-direction: column; } .gr-video-wrap { width: 100%; flex: none; } .gr-sidebar { width: 100%; flex: none; align-items: center; text-align: center; } .gr-btn-join { width: 100%; } }
 
     /* MAIN MEETING */
-    #mainMeeting { display: none; flex: 1; flex-direction: column; position: relative; }
-    .video-area { flex: 1; display: flex; padding: 16px; gap: 16px; justify-content: center; align-items: center; overflow: hidden; position: relative; }
-    .video-grid { display: grid; width: 100%; height: 100%; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); transition: all 0.3s ease; }
+    #mainMeeting { display: none; flex: 1; flex-direction: column; position: relative; height: 100%; }
+    
+    /* FIX CRITICO: Flex-basis e min-height per gestire correttamente lo spazio */
+    .video-area {
+      flex: 1 1 auto;
+      display: flex;
+      padding: 16px;
+      gap: 16px;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      position: relative;
+      min-height: 0; /* Assicura che flex non sbordi lo schermo */
+    }
+    
+    .video-grid {
+      display: grid;
+      width: 100%;
+      height: 100%;
+      gap: 16px;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      transition: all 0.3s ease;
+      align-content: center;
+      justify-content: center;
+    }
+    
     .video-area.side-by-side { flex-direction: row; }
-    .video-area.side-by-side .video-grid { width: 300px; grid-template-columns: 1fr; grid-auto-rows: min-content; align-content: start; }
-    .video-cell { position: relative; background: #3c4043; border-radius: 8px; overflow: hidden; display: flex; justify-content: center; align-items: center; }
-    .video-cell video { width: 100%; height: 100%; object-fit: cover; }
+    .video-area.side-by-side .video-grid { width: 280px; grid-template-columns: 1fr; grid-auto-rows: min-content; align-content: start; }
+    
+    .video-cell {
+      position: relative;
+      background: #3c4043;
+      border-radius: 8px;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+      height: 100%;
+      /* FIX CRITICO: Forza il contenitore a rispettare le proporzioni e a non sfondare lo schermo */
+      max-height: 100%;
+    }
+    .video-cell video {
+      width: 100%;
+      height: 100%;
+      object-fit: contain; /* FIX CRITICO: 'contain' evita che il video venga tagliato fuori se la finestra ha proporzioni strane */
+      background: #000;
+    }
     .video-cell video.mirror { transform: scaleX(-1); }
+    
     .name-badge { position: absolute; bottom: 16px; left: 16px; background: rgba(0,0,0,0.6); color: #fff; padding: 4px 10px; border-radius: 4px; font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 8px; z-index: 10; }
     .mic-badge { display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; background: rgba(0,0,0,0.6); }
     .mic-badge.muted { background: #ea4335; }
@@ -107,7 +159,7 @@
     .avatar-circle { width: 80px; height: 80px; border-radius: 50%; background: #8ab4f8; color: #202124; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 400; margin-bottom: 12px; }
 
     /* LAVAGNA */
-    #boardPanel { display: none; flex: 1; background: #ffffff; border-radius: 8px; margin: 16px 16px 16px 0; position: relative; box-shadow: 0 1px 3px rgba(0,0,0,0.12); flex-direction: column; overflow: hidden; }
+    #boardPanel { display: none; flex: 1; background: #ffffff; border-radius: 8px; margin: 16px 16px 16px 0; position: relative; box-shadow: 0 1px 3px rgba(0,0,0,0.12); flex-direction: column; overflow: hidden; min-width: 0; }
     #boardPanel.active { display: flex; }
     .board-header-meet { height: 48px; border-bottom: 1px solid #dadce0; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; background: #f8f9fa; color: #3c4043; }
     .board-title { font-size: 16px; font-weight: 500; display: flex; align-items: center; gap: 8px; }
@@ -119,22 +171,28 @@
     .btf-btn { width: 36px; height: 36px; border-radius: 50%; border: none; background: transparent; color: #5f6368; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
     .btf-btn:hover { background: #f1f3f4; }
     .btf-btn.active { background: #e8f0fe; color: #1a73e8; }
-    .canvas-wrap { flex: 1; position: relative; cursor: crosshair; touch-action: none; }
+    .canvas-wrap { flex: 1; position: relative; cursor: crosshair; touch-action: none; overflow: hidden; }
     canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
 
     /* BOTTOM BAR */
-    .bottom-bar { height: 80px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; background: var(--bg-dark); z-index: 40; }
+    /* FIX CRITICO: flex-shrink: 0 evita che la bottom bar venga schiacciata o spinta fuori schermo */
+    .bottom-bar { height: 80px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; background: var(--bg-dark); z-index: 40; }
+    
     .bb-left { flex: 1; display: flex; align-items: center; gap: 16px; color: #e8eaed; font-size: 16px; font-weight: 500; }
     .time-display { font-variant-numeric: tabular-nums; }
-    .bb-center { display: flex; align-items: center; gap: 12px; }
+    
+    .bb-center { display: flex; align-items: center; justify-content: center; gap: 12px; }
+    
     .bb-right { flex: 1; display: flex; align-items: center; justify-content: flex-end; gap: 12px; }
-    .ctrl-btn { width: 48px; height: 48px; border-radius: 50%; border: none; background: var(--control-bg); color: var(--text-main); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.2s, box-shadow 0.2s; position: relative; }
+    
+    .ctrl-btn { width: 48px; height: 48px; border-radius: 50%; border: none; background: var(--control-bg); color: var(--text-main); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.2s, box-shadow 0.2s; position: relative; flex-shrink: 0; }
     .ctrl-btn:hover { background: var(--control-hover); }
     .ctrl-btn.off { background: var(--danger); color: #fff; }
     .ctrl-btn.off:hover { box-shadow: 0 1px 3px rgba(234, 67, 53, 0.5); }
     .ctrl-btn.active { background: #8ab4f8; color: #202124; }
     .ctrl-btn.hangup { background: var(--danger); width: 56px; height: 40px; border-radius: 20px; }
     .ctrl-btn.hangup:hover { background: #d93025; }
+    
     .badge { position: absolute; top: -2px; right: -2px; background: #8ab4f8; color: #202124; font-size: 10px; font-weight: bold; width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s; }
     .badge.show { opacity: 1; }
 
@@ -142,20 +200,21 @@
     .reaction-container { position: absolute; bottom: 90px; left: 50%; transform: translateX(-50%); pointer-events: none; z-index: 100; display: flex; gap: 10px; }
     .fly-reaction { font-size: 32px; animation: flyUp 2s cubic-bezier(0.25, 1, 0.5, 1) forwards; position: absolute; bottom: 0; }
     @keyframes flyUp { 0% { transform: translateY(0) scale(0.5); opacity: 0; } 20% { opacity: 1; transform: translateY(-40px) scale(1.2); } 80% { opacity: 1; transform: translateY(-120px) scale(1); } 100% { transform: translateY(-160px) scale(0.8); opacity: 0; } }
-    .reactions-menu { position: absolute; bottom: 70px; left: 50%; transform: translateX(-50%); background: #3c4043; border-radius: 24px; padding: 8px 16px; display: flex; gap: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); display: none; z-index: 50; }
+    .reactions-menu { position: absolute; bottom: 90px; left: 50%; transform: translateX(-50%); background: #3c4043; border-radius: 24px; padding: 8px 16px; display: flex; gap: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); display: none; z-index: 50; }
     .reactions-menu.open { display: flex; }
     .react-btn { background: transparent; border: none; font-size: 24px; cursor: pointer; transition: transform 0.2s; }
     .react-btn:hover { transform: scale(1.3); }
 
     /* MODAL PANNELLI */
-    .info-modal { position: absolute; bottom: 80px; left: 24px; background: #fff; color: #202124; border-radius: 8px; padding: 16px; width: 320px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: none; z-index: 50; flex-direction: column; gap: 16px; }
+    /* FIX CRITICO: Calcolo della distanza dal basso dinamico */
+    .info-modal { position: absolute; bottom: 90px; left: 24px; background: #fff; color: #202124; border-radius: 8px; padding: 16px; width: 320px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: none; z-index: 50; flex-direction: column; gap: 16px; }
     .info-modal.open { display: flex; }
     .info-title { font-size: 16px; font-weight: 500; }
     .info-link-box { background: #f1f3f4; padding: 10px; border-radius: 4px; font-size: 13px; font-family: monospace; word-break: break-all; }
     .btn-primary-small { background: #1a73e8; color: #fff; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px; }
     .btn-primary-small:hover { background: #1557b0; }
     
-    .people-modal { position: absolute; bottom: 80px; right: 24px; background: #fff; color: #202124; border-radius: 8px; width: 320px; max-height: 400px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: none; flex-direction: column; z-index: 50; overflow: hidden; }
+    .people-modal { position: absolute; bottom: 90px; right: 24px; background: #fff; color: #202124; border-radius: 8px; width: 320px; max-height: calc(100vh - 120px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: none; flex-direction: column; z-index: 50; overflow: hidden; }
     .people-modal.open { display: flex; }
     .people-header { padding: 16px; border-bottom: 1px solid #e8eaed; font-size: 16px; font-weight: 500; display: flex; justify-content: space-between; align-items: center; }
     .people-list { flex: 1; overflow-y: auto; padding: 8px 0; }
@@ -174,12 +233,28 @@
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: #5f6368; border-radius: 4px; }
 
+    /* FIX CRITICO: Responsive per schermi piccoli / smartphone in verticale e orizzontale */
     @media (max-width: 900px) {
-      .bottom-bar { padding: 0 12px; } .bb-left { display: none; } .bb-right { gap: 4px; } .ctrl-btn { width: 44px; height: 44px; }
+      .bottom-bar { padding: 0 12px; } 
+      .bb-left { display: none; } /* Nasconde l'ora */
+      .bb-right { gap: 4px; } 
+      .bb-center { gap: 6px; flex: 1; justify-content: center; } /* Comprime i tasti al centro */
+      .ctrl-btn { width: 44px; height: 44px; }
+      
       .info-modal, .people-modal { width: calc(100% - 24px); left: 12px; right: 12px; bottom: 85px; }
+      
+      .video-area { padding: 8px; }
       .video-area.side-by-side { flex-direction: column; }
-      .video-area.side-by-side .video-grid { width: 100%; height: 120px; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
-      #boardPanel { margin: 0 16px 16px 16px; }
+      .video-area.side-by-side .video-grid { width: 100%; height: 140px; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
+      #boardPanel { margin: 0 8px 8px 8px; }
+    }
+    
+    /* Layout orizzontale estremo o schermi molto piccoli in altezza */
+    @media (max-height: 600px) {
+      .bottom-bar { height: 60px; }
+      .ctrl-btn { width: 40px; height: 40px; }
+      #toastContainer { bottom: 70px; }
+      .reactions-menu, .info-modal, .people-modal { bottom: 70px; }
     }
   </style>
 </head>
@@ -199,7 +274,7 @@
     <div class="gr-header">
       <div style="display:flex; align-items:center; gap:8px;">
         <span class="material-symbols-rounded" style="color: #8ab4f8;">videocam</span>
-        <span style="font-weight: 500;">MeetStudio v9</span>
+        <span style="font-weight: 500;">MeetStudio v10</span>
       </div>
       <div class="guest-badge" id="guestBadgeIndicator">Ospite</div>
     </div>
@@ -257,9 +332,13 @@
   <!-- SCENA 2: MAIN MEETING -->
   <div id="mainMeeting">
     
-    <div style="flex:1; display:flex; overflow:hidden;">
+    <!-- AREA VIDEO E LAVAGNA (FLUIDA) -->
+    <div style="flex:1; display:flex; overflow:hidden; position:relative;">
+      
+      <!-- AREA GRIGLIA VIDEO -->
       <div class="video-area" id="videoArea">
         <div class="video-grid" id="videoGrid">
+          <!-- Cella Tu -->
           <div class="video-cell" id="localVideoCell">
             <video id="localVideo" autoplay muted playsinline class="mirror"></video>
             <div id="localCamOffOverlay" class="avatar-overlay"><div class="avatar-circle" id="localAvatar">T</div></div>
@@ -303,9 +382,10 @@
           </div>
         </div>
       </div>
-    </div>
+      
+    </div> <!-- Fine Area Contenuti -->
 
-    <!-- REAZIONI -->
+    <!-- REAZIONI FLUTTUANTI -->
     <div id="reactionContainer" class="reaction-container"></div>
     <div id="reactionsMenu" class="reactions-menu">
       <button class="react-btn" onclick="sendReaction('💖')">💖</button>
@@ -315,13 +395,16 @@
       <button class="react-btn" onclick="sendReaction('😮')">😮</button>
     </div>
 
-    <!-- BOTTOM BAR -->
+    <!-- BOTTOM BAR (Fissa in basso) -->
     <div class="bottom-bar">
+      <!-- Info Stanza (sx) -->
       <div class="bb-left">
         <span class="time-display" id="timeDisplay">10:00</span>
         <div style="width:1px; height:16px; background:#5f6368;"></div>
         <span id="bbRoomName" style="cursor:pointer;" onclick="toggleInfoModal()">AULA-101</span>
       </div>
+      
+      <!-- Controlli Chiamata (Centro) -->
       <div class="bb-center">
         <button class="ctrl-btn" id="btnMainMic" onclick="toggleLocalMic()"><span class="material-symbols-rounded">mic</span></button>
         <button class="ctrl-btn" id="btnMainCam" onclick="toggleLocalCam()"><span class="material-symbols-rounded">videocam</span></button>
@@ -329,17 +412,20 @@
         <button class="ctrl-btn" onclick="toggleReactionsMenu()"><span class="material-symbols-rounded">mood</span></button>
         <button class="ctrl-btn hangup" onclick="leaveMeeting()"><span class="material-symbols-rounded">call_end</span></button>
       </div>
+      
+      <!-- Strumenti Extra (dx) -->
       <div class="bb-right">
-        <button class="ctrl-btn" onclick="toggleInfoModal()"><span class="material-symbols-rounded">info</span></button>
-        <button class="ctrl-btn" onclick="togglePeopleModal()">
+        <button class="ctrl-btn" onclick="toggleInfoModal()" title="Dettagli riunione"><span class="material-symbols-rounded">info</span></button>
+        <button class="ctrl-btn" onclick="togglePeopleModal()" title="Partecipanti">
           <span class="material-symbols-rounded">group</span><div class="badge" id="peopleBadge">1</div>
         </button>
-        <button class="ctrl-btn" onclick="shareLocalScreen()"><span class="material-symbols-rounded">present_to_all</span></button>
-        <button class="ctrl-btn" id="btnBoard" onclick="toggleBoard()"><span class="material-symbols-rounded">draw</span></button>
+        <button class="ctrl-btn" onclick="shareLocalScreen()" title="Condividi schermo"><span class="material-symbols-rounded">present_to_all</span></button>
+        <button class="ctrl-btn" id="btnBoard" onclick="toggleBoard()" title="Apri lavagna"><span class="material-symbols-rounded">draw</span></button>
       </div>
     </div>
     
     <!-- MODALS -->
+    <!-- Info -->
     <div id="infoModal" class="info-modal">
       <div class="info-title">Informazioni per partecipare</div>
       <div style="font-size:13px; color:#5f6368;">Link alla riunione</div>
@@ -349,6 +435,7 @@
       <div id="qrcodeContainer" style="background:#fff; padding:8px; border-radius:8px; align-self:center;"></div>
     </div>
 
+    <!-- Partecipanti -->
     <div id="peopleModal" class="people-modal">
       <div class="people-header">
         Partecipanti
@@ -366,7 +453,7 @@
             <div class="person-name" id="listNameRemote">Ospite</div><div class="person-sub" id="listSubRemote">Connesso P2P</div>
           </div>
           <div class="person-actions" id="hostActions" style="display:none;">
-            <!-- HOST CONTROLS (Visibili solo se sei l'host) -->
+            <!-- HOST CONTROLS -->
             <span class="material-symbols-rounded action-icon" id="hostCtrlMic" onclick="hostToggleRemoteMic()" title="Muta partecipante">mic</span>
             <span class="material-symbols-rounded action-icon" id="hostCtrlCam" onclick="hostToggleRemoteCam()" title="Spegni video">videocam</span>
           </div>
@@ -385,7 +472,7 @@
     let isHost = true; 
     let guestKnockConnection = null;
 
-    // Clock
+    // Orologio
     setInterval(() => {
       const d = new Date();
       document.getElementById('timeDisplay').textContent = d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
@@ -405,15 +492,14 @@
       const params = new URLSearchParams(window.location.search);
       const roomParam = params.get('room');
       
-      // Controllo rigoroso del parametro guest
       if (params.get('guest') === 'true') {
         isHost = false;
         document.getElementById('btnJoin').textContent = 'Chiedi di partecipare';
-        document.getElementById('btnPresentInfo').style.display = 'none'; // Gli ospiti non invitano
+        document.getElementById('btnPresentInfo').style.display = 'none';
         document.getElementById('guestBadgeIndicator').style.display = 'block';
         document.getElementById('roomInput').readOnly = true;
       } else {
-        document.getElementById('hostActions').style.display = 'flex'; // Mostra controlli host
+        document.getElementById('hostActions').style.display = 'flex';
       }
 
       let savedRoom = null; try { savedRoom = localStorage.getItem('meetstudio_last_room'); } catch (e) {}
@@ -523,7 +609,7 @@
 
 
     // ==========================================================================
-    // 2. LOGICA HOST E GUEST (KNOCK SYSTEM SICURO)
+    // 2. LOGICA HOST E GUEST
     // ==========================================================================
     async function joinMeeting() {
       updateAvatar();
@@ -552,26 +638,17 @@
       try { localStorage.setItem('meetstudio_last_room', code); } catch (e) {}
       
       if (peer) peer.destroy();
-      const hostId = `meetstudiov9-${code}-host`; // Nuovo namespace per evitare conflitti coi test precedenti
+      const hostId = `meetstudiov10-${code}-host`; // Namespace aggiornato
 
       peer = new Peer(hostId, { config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }] } });
 
-      peer.on('open', () => {
-        showToast(`Sei l'organizzatore. Stanza creata.`, 'security');
-      });
+      peer.on('open', () => { showToast(`Sei l'organizzatore. Stanza creata.`, 'security'); });
 
       peer.on('connection', (conn) => {
         conn.on('data', (msg) => {
           if (typeof msg === 'string') { try { msg = JSON.parse(msg); } catch (e) {} }
-          
-          if (msg.type === 'knock') {
-            // Nuova richiesta da un Ospite
-            showKnockPrompt(conn, msg.name, msg.peerId);
-          } 
-          else if (dataConn && conn.peer === dataConn.peer) {
-            // Dati normali (Lavagna, Telemetria, ecc.) dalla connessione autorizzata
-            handleIncomingData(msg);
-          }
+          if (msg.type === 'knock') { showKnockPrompt(conn, msg.name, msg.peerId); } 
+          else if (dataConn && conn.peer === dataConn.peer) { handleIncomingData(msg); }
         });
 
         conn.on('close', () => {
@@ -584,32 +661,28 @@
       });
 
       peer.on('call', (call) => {
-        // L'Host accetta il flusso video SOLO se la connessione è stata preventivamente autorizzata tramite il Knock
         if (dataConn && call.peer === dataConn.peer) {
           call.answer(localStream);
           setupMediaCall(call);
         } else {
-          // Rifiuta chiamate da utenti non ammessi
           call.close();
         }
       });
 
       peer.on('error', (err) => {
         if (err.type === 'unavailable-id') {
-          alert("Errore: La stanza è già stata creata da un altro organizzatore in questo momento. Impossibile sovrascriverla.");
+          alert("Errore: La stanza è già stata creata da un altro organizzatore. Impossibile sovrascriverla.");
           window.location.reload();
         }
       });
     }
 
     function showKnockPrompt(tempConn, guestName, guestPeerId) {
-      // Chiudi prompt precedenti se presenti
       const existing = document.getElementById('knockPromptBox');
       if (existing) existing.remove();
 
       const div = document.createElement('div');
-      div.id = 'knockPromptBox';
-      div.className = 'knock-prompt';
+      div.id = 'knockPromptBox'; div.className = 'knock-prompt';
       div.innerHTML = `
         <div style="font-weight: 500; font-size:16px;">Richiesta di partecipazione</div>
         <div style="color: #9aa0a6; font-size: 14px;">L'utente <strong>${guestName}</strong> vuole entrare nella riunione.</div>
@@ -629,7 +702,7 @@
       if (accepted) {
         tempConn.send({ type: 'knock-response', status: 'accepted' });
         remotePeerId = guestPeerId;
-        dataConn = tempConn; // Impostiamo dataConn come connessione ufficiale e sicura
+        dataConn = tempConn; 
         showToast(`${guestName} è entrato nella stanza`, 'person_add');
         sendTelemetry();
         syncFullBoardToRemote();
@@ -643,7 +716,7 @@
     // ================= GUEST =================
     function startKnocking() {
       const code = document.getElementById('roomInput').value.trim().toUpperCase();
-      const hostId = `meetstudiov9-${code}-host`;
+      const hostId = `meetstudiov10-${code}-host`;
 
       peer = new Peer(undefined, { config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] } });
 
@@ -651,7 +724,6 @@
         guestKnockConnection = peer.connect(hostId, { reliable: true });
         
         guestKnockConnection.on('open', () => {
-          // Bussa alla porta dell'Host
           guestKnockConnection.send({ type: 'knock', name: myName, peerId: myId });
         });
 
@@ -660,17 +732,15 @@
           
           if (msg.type === 'knock-response') {
             if (msg.status === 'accepted') {
-              // L'Host ha accettato!
               document.getElementById('waitingScreen').style.display = 'none';
               document.getElementById('mainMeeting').style.display = 'flex';
               
-              dataConn = guestKnockConnection; // La connessione di knock diventa quella ufficiale
+              dataConn = guestKnockConnection; 
               remotePeerId = hostId;
               
               showToast("L'organizzatore ha accettato la tua richiesta.", 'check_circle');
               sendTelemetry();
 
-              // Avvia la chiamata video verso l'Host
               const call = peer.call(hostId, localStream);
               setupMediaCall(call);
 
@@ -700,7 +770,6 @@
         }
       });
 
-      // L'Ospite risponde anche se l'Host dovesse riavviare il video
       peer.on('call', (call) => {
         if (dataConn && call.peer === remotePeerId) {
           call.answer(localStream);
@@ -711,7 +780,7 @@
 
 
     // ==========================================================================
-    // GESTIONE VIDEO E TELEMETRIA COMUNE
+    // GESTIONE VIDEO E TELEMETRIA
     // ==========================================================================
     function createRemoteVideoCell() {
       if(document.getElementById('remoteVideoCell')) return;
@@ -778,8 +847,8 @@
         else if (!msg.hand) handRaisedRemoteFlag = false;
 
       } else if (msg.type === 'cmd') {
-        if (msg.action === 'set-mic') { setLocalMic(msg.value); showToast('Un organizzatore ha disattivato il tuo microfono', 'mic_off'); }
-        else if (msg.action === 'set-cam') { setLocalCam(msg.value); showToast('Un organizzatore ha disattivato la tua fotocamera', 'videocam_off'); }
+        if (msg.action === 'set-mic') { setLocalMic(msg.value); showToast('L\'organizzatore ha disattivato il tuo microfono', 'mic_off'); }
+        else if (msg.action === 'set-cam') { setLocalCam(msg.value); showToast('L\'organizzatore ha disattivato la tua fotocamera', 'videocam_off'); }
         else if (msg.action === 'ring-bell') {
           if(navigator.vibrate) navigator.vibrate([250, 120, 250]);
           try {
@@ -860,9 +929,13 @@
       const panel = document.getElementById('boardPanel'), btn = document.getElementById('btnBoard'), vArea = document.getElementById('videoArea');
       if(isBoardOpen) { panel.classList.add('active'); btn.classList.add('active'); vArea.classList.add('side-by-side'); setTimeout(resizeCanvas, 300); } 
       else { panel.classList.remove('active'); btn.classList.remove('active'); vArea.classList.remove('side-by-side'); }
+      // Forza il ridimensionamento della griglia video quando cambia il layout della lavagna
+      window.dispatchEvent(new Event('resize'));
     }
+    
     const canvas = document.getElementById('boardCanvas'); const ctx = canvas.getContext('2d'); const wrap = document.getElementById('canvasWrap');
     let currentTool = 'pen'; let isDrawing = false; let startX = 0, startY = 0; let pagesData = []; let currentPage = 0;
+    
     function restoreCanvasFromDataUrl(dataUrl, emitSync = false) {
       ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
       if (dataUrl) { const img = new Image(); img.onload = () => { ctx.drawImage(img, 0, 0, canvas.width, canvas.height); pagesData[currentPage] = canvas.toDataURL(); if (emitSync) sendData({ type: 'page-sync', page: currentPage, dataUrl: pagesData[currentPage] }); }; img.src = dataUrl; }
