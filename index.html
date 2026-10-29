@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>MeetStudio v8 — Attesa e Permessi (Google Meet Style)</title>
+  <title>MeetStudio v9 — Fix Accesso & Ruoli Host/Ospite</title>
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <!-- Material Symbols -->
@@ -69,7 +69,7 @@
 
     /* GREEN ROOM */
     #greenRoom { position: fixed; inset: 0; background: #202124; z-index: 200; display: flex; flex-direction: column; padding: 24px; overflow-y: auto; }
-    .gr-header { font-size: 22px; font-weight: 400; color: #e8eaed; margin-bottom: 24px; }
+    .gr-header { font-size: 22px; font-weight: 400; color: #e8eaed; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; }
     .gr-content { display: flex; flex: 1; gap: 32px; max-width: 1000px; margin: 0 auto; width: 100%; align-items: center; justify-content: center; }
     .gr-video-wrap { flex: 1.2; position: relative; background: #000; border-radius: 8px; overflow: hidden; aspect-ratio: 16/9; box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 2px 6px 2px rgba(60,64,67,0.15); }
     .gr-video-wrap video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
@@ -87,6 +87,7 @@
     .gr-btn-join:hover { background: #aecbfa; box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24); }
     .gr-btn-present { background: transparent; color: #8ab4f8; border: none; font-size: 15px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 24px; }
     .gr-btn-present:hover { background: rgba(138, 180, 248, 0.08); }
+    .guest-badge { background: #ea4335; color: white; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; display: none; }
     @media (max-width: 900px) { .gr-content { flex-direction: column; } .gr-video-wrap { width: 100%; flex: none; } .gr-sidebar { width: 100%; flex: none; align-items: center; text-align: center; } .gr-btn-join { width: 100%; } }
 
     /* MAIN MEETING */
@@ -198,8 +199,9 @@
     <div class="gr-header">
       <div style="display:flex; align-items:center; gap:8px;">
         <span class="material-symbols-rounded" style="color: #8ab4f8;">videocam</span>
-        <span style="font-weight: 500;">MeetStudio v8</span>
+        <span style="font-weight: 500;">MeetStudio v9</span>
       </div>
+      <div class="guest-badge" id="guestBadgeIndicator">Ospite</div>
     </div>
     
     <div class="gr-content">
@@ -216,13 +218,13 @@
           </div>
         </div>
         <div class="gr-controls-overlay">
-          <button class="ctrl-btn" id="btnPreviewMic" onclick="toggleLocalMic(true)">
+          <button class="ctrl-btn" id="btnPreviewMic" onclick="toggleLocalMic()">
             <span class="material-symbols-rounded">mic</span>
           </button>
-          <button class="ctrl-btn" id="btnPreviewCam" onclick="toggleLocalCam(true)">
+          <button class="ctrl-btn" id="btnPreviewCam" onclick="toggleLocalCam()">
             <span class="material-symbols-rounded">videocam</span>
           </button>
-          <button class="ctrl-btn" onclick="switchLocalCamera(true)" title="Gira Fotocamera">
+          <button class="ctrl-btn" onclick="switchLocalCamera()" title="Gira Fotocamera">
             <span class="material-symbols-rounded">flip_camera_ios</span>
           </button>
         </div>
@@ -242,7 +244,7 @@
         </div>
 
         <div style="display:flex; flex-direction:column; gap:12px; align-items:center;">
-          <button class="gr-btn-join" id="btnJoin" onclick="joinMeeting()">Partecipa</button>
+          <button class="gr-btn-join" id="btnJoin" onclick="joinMeeting()">Partecipa come Organizzatore</button>
           <button class="gr-btn-present" id="btnPresentInfo" onclick="openInviteModalFromGR()">
             <span class="material-symbols-rounded">share</span> Condividi info per partecipare
           </button>
@@ -262,7 +264,7 @@
             <video id="localVideo" autoplay muted playsinline class="mirror"></video>
             <div id="localCamOffOverlay" class="avatar-overlay"><div class="avatar-circle" id="localAvatar">T</div></div>
             <div class="name-badge">
-              Tu
+              <span id="localNameBadge">Tu</span>
               <div class="mic-badge" id="localMicBadge" style="display:none;"><span class="material-symbols-rounded">mic_off</span></div>
             </div>
           </div>
@@ -321,8 +323,8 @@
         <span id="bbRoomName" style="cursor:pointer;" onclick="toggleInfoModal()">AULA-101</span>
       </div>
       <div class="bb-center">
-        <button class="ctrl-btn" id="btnMainMic" onclick="toggleLocalMic(false)"><span class="material-symbols-rounded">mic</span></button>
-        <button class="ctrl-btn" id="btnMainCam" onclick="toggleLocalCam(false)"><span class="material-symbols-rounded">videocam</span></button>
+        <button class="ctrl-btn" id="btnMainMic" onclick="toggleLocalMic()"><span class="material-symbols-rounded">mic</span></button>
+        <button class="ctrl-btn" id="btnMainCam" onclick="toggleLocalCam()"><span class="material-symbols-rounded">videocam</span></button>
         <button class="ctrl-btn" id="btnHand" onclick="toggleHand()"><span class="material-symbols-rounded">front_hand</span></button>
         <button class="ctrl-btn" onclick="toggleReactionsMenu()"><span class="material-symbols-rounded">mood</span></button>
         <button class="ctrl-btn hangup" onclick="leaveMeeting()"><span class="material-symbols-rounded">call_end</span></button>
@@ -363,8 +365,8 @@
           <div class="person-info">
             <div class="person-name" id="listNameRemote">Ospite</div><div class="person-sub" id="listSubRemote">Connesso P2P</div>
           </div>
-          <div class="person-actions">
-            <!-- HOST CONTROLS (Solo se sei l'host) -->
+          <div class="person-actions" id="hostActions" style="display:none;">
+            <!-- HOST CONTROLS (Visibili solo se sei l'host) -->
             <span class="material-symbols-rounded action-icon" id="hostCtrlMic" onclick="hostToggleRemoteMic()" title="Muta partecipante">mic</span>
             <span class="material-symbols-rounded action-icon" id="hostCtrlCam" onclick="hostToggleRemoteCam()" title="Spegni video">videocam</span>
           </div>
@@ -378,7 +380,10 @@
     let isMobileDevice = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
     let localStream = null, micEnabled = true, camEnabled = true, currentFacingMode = 'user', audioCtx = null;
     let peer = null, dataConn = null, activeCall = null, remotePeerId = null, remoteMicIsOn = true, remoteCamIsOn = true, handRaised = false;
-    let isGuestMode = false;
+    
+    // GESTIONE RUOLO: Host vs Ospite
+    let isHost = true; 
+    let guestKnockConnection = null;
 
     // Clock
     setInterval(() => {
@@ -400,11 +405,15 @@
       const params = new URLSearchParams(window.location.search);
       const roomParam = params.get('room');
       
-      // Controllo se il link è un invito per ospiti (guest=true)
+      // Controllo rigoroso del parametro guest
       if (params.get('guest') === 'true') {
-        isGuestMode = true;
+        isHost = false;
         document.getElementById('btnJoin').textContent = 'Chiedi di partecipare';
         document.getElementById('btnPresentInfo').style.display = 'none'; // Gli ospiti non invitano
+        document.getElementById('guestBadgeIndicator').style.display = 'block';
+        document.getElementById('roomInput').readOnly = true;
+      } else {
+        document.getElementById('hostActions').style.display = 'flex'; // Mostra controlli host
       }
 
       let savedRoom = null; try { savedRoom = localStorage.getItem('meetstudio_last_room'); } catch (e) {}
@@ -424,7 +433,7 @@
       document.getElementById('previewAvatar').textContent = myAvatar;
       document.getElementById('localAvatar').textContent = myAvatar;
       document.getElementById('listAvatarTu').textContent = myAvatar;
-      document.getElementById('listNameTu').textContent = myName;
+      document.getElementById('listNameTu').textContent = myName + (isHost ? " (Host)" : " (Tu)");
     }
 
     async function ensureAudioContext() {
@@ -514,7 +523,7 @@
 
 
     // ==========================================================================
-    // 2. LOGICA HOST E GUEST (KNOCK SYSTEM)
+    // 2. LOGICA HOST E GUEST (KNOCK SYSTEM SICURO)
     // ==========================================================================
     async function joinMeeting() {
       updateAvatar();
@@ -524,7 +533,7 @@
       document.getElementById('greenRoom').style.display = 'none';
       document.getElementById('bbRoomName').textContent = document.getElementById('roomInput').value.trim().toUpperCase();
 
-      if (isGuestMode) {
+      if (!isHost) {
         document.getElementById('waitingScreen').style.display = 'flex';
         startKnocking();
       } else {
@@ -537,37 +546,37 @@
       if(peer) peer.destroy(); window.location.reload();
     }
 
-    // HOST: Crea la stanza e gestisce le richieste (Knock)
+    // ================= HOST =================
     function connectAsHost() {
-      const code = document.getElementById('roomInput').value.trim().toUpperCase() || 'AULA-101';
+      const code = document.getElementById('roomInput').value.trim().toUpperCase();
       try { localStorage.setItem('meetstudio_last_room', code); } catch (e) {}
       
       if (peer) peer.destroy();
-      const hostId = `meetstudiov8-${code}-host`;
+      const hostId = `meetstudiov9-${code}-host`; // Nuovo namespace per evitare conflitti coi test precedenti
 
       peer = new Peer(hostId, { config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }] } });
 
       peer.on('open', () => {
-        showToast(`Riunione creata. Invia il link per far partecipare qualcuno.`, 'check_circle');
+        showToast(`Sei l'organizzatore. Stanza creata.`, 'security');
       });
 
       peer.on('connection', (conn) => {
-        // Ascolta messaggi sulla nuova connessione
         conn.on('data', (msg) => {
           if (typeof msg === 'string') { try { msg = JSON.parse(msg); } catch (e) {} }
           
           if (msg.type === 'knock') {
-            // Qualcuno bussa!
+            // Nuova richiesta da un Ospite
             showKnockPrompt(conn, msg.name, msg.peerId);
-          } else if (dataConn && conn.peer === dataConn.peer) {
-            // Messaggio standard dalla connessione accettata
+          } 
+          else if (dataConn && conn.peer === dataConn.peer) {
+            // Dati normali (Lavagna, Telemetria, ecc.) dalla connessione autorizzata
             handleIncomingData(msg);
           }
         });
 
         conn.on('close', () => {
           if (dataConn && conn.peer === dataConn.peer) {
-            showToast(`Un partecipante ha lasciato la riunione`, 'person_remove');
+            showToast(`L'ospite ha lasciato la riunione`, 'person_remove');
             removeRemoteVideoCell();
             dataConn = null;
           }
@@ -575,104 +584,109 @@
       });
 
       peer.on('call', (call) => {
-        // Rispondi alla chiamata multimediale solo se la connessione dati è già stata autorizzata
+        // L'Host accetta il flusso video SOLO se la connessione è stata preventivamente autorizzata tramite il Knock
         if (dataConn && call.peer === dataConn.peer) {
           call.answer(localStream);
           setupMediaCall(call);
+        } else {
+          // Rifiuta chiamate da utenti non ammessi
+          call.close();
         }
       });
 
       peer.on('error', (err) => {
         if (err.type === 'unavailable-id') {
-          // L'Host ID è già preso! Divento ospite
-          alert("La stanza è già occupata da un organizzatore. Entro in modalità ospite...");
-          isGuestMode = true;
-          document.getElementById('mainMeeting').style.display = 'none';
-          document.getElementById('waitingScreen').style.display = 'flex';
-          startKnocking();
+          alert("Errore: La stanza è già stata creata da un altro organizzatore in questo momento. Impossibile sovrascriverla.");
+          window.location.reload();
         }
       });
     }
 
-    // Mostra popup "Tizio chiede di partecipare" all'Host
     function showKnockPrompt(tempConn, guestName, guestPeerId) {
+      // Chiudi prompt precedenti se presenti
+      const existing = document.getElementById('knockPromptBox');
+      if (existing) existing.remove();
+
       const div = document.createElement('div');
+      div.id = 'knockPromptBox';
       div.className = 'knock-prompt';
       div.innerHTML = `
-        <div style="font-weight: 500; font-size:16px;">Un utente vuole partecipare</div>
-        <div style="color: #9aa0a6; font-size: 14px;"><strong>${guestName}</strong> ha chiesto di accedere alla chiamata.</div>
+        <div style="font-weight: 500; font-size:16px;">Richiesta di partecipazione</div>
+        <div style="color: #9aa0a6; font-size: 14px;">L'utente <strong>${guestName}</strong> vuole entrare nella riunione.</div>
         <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:4px;">
-          <button class="btn-knock reject">Nega accesso</button>
-          <button class="btn-knock">Ammetti</button>
+          <button class="btn-knock reject" id="btnRejectKnock">Nega accesso</button>
+          <button class="btn-knock" id="btnAcceptKnock">Ammetti</button>
         </div>
       `;
       document.body.appendChild(div);
 
-      const btns = div.querySelectorAll('.btn-knock');
-      btns[0].onclick = () => answerKnock(false, div, tempConn, guestPeerId, guestName); // Nega
-      btns[1].onclick = () => answerKnock(true, div, tempConn, guestPeerId, guestName);  // Ammetti
+      document.getElementById('btnRejectKnock').onclick = () => answerKnock(false, div, tempConn, guestPeerId, guestName);
+      document.getElementById('btnAcceptKnock').onclick = () => answerKnock(true, div, tempConn, guestPeerId, guestName);
     }
 
     function answerKnock(accepted, divElem, tempConn, guestPeerId, guestName) {
+      divElem.remove();
       if (accepted) {
-        // Se accettato, questa connessione diventa quella ufficiale
         tempConn.send({ type: 'knock-response', status: 'accepted' });
         remotePeerId = guestPeerId;
-        dataConn = tempConn;
+        dataConn = tempConn; // Impostiamo dataConn come connessione ufficiale e sicura
         showToast(`${guestName} è entrato nella stanza`, 'person_add');
         sendTelemetry();
         syncFullBoardToRemote();
       } else {
         tempConn.send({ type: 'knock-response', status: 'rejected' });
-        setTimeout(() => tempConn.close(), 500);
+        setTimeout(() => tempConn.close(), 1000);
       }
-      divElem.remove();
     }
 
-    // GUEST: Bussa per entrare
+
+    // ================= GUEST =================
     function startKnocking() {
-      const code = document.getElementById('roomInput').value.trim().toUpperCase() || 'AULA-101';
-      const hostId = `meetstudiov8-${code}-host`;
+      const code = document.getElementById('roomInput').value.trim().toUpperCase();
+      const hostId = `meetstudiov9-${code}-host`;
 
       peer = new Peer(undefined, { config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] } });
 
       peer.on('open', (myId) => {
-        const conn = peer.connect(hostId, { reliable: true });
+        guestKnockConnection = peer.connect(hostId, { reliable: true });
         
-        conn.on('open', () => {
-          // Bussa!
-          conn.send({ type: 'knock', name: myName, peerId: myId });
+        guestKnockConnection.on('open', () => {
+          // Bussa alla porta dell'Host
+          guestKnockConnection.send({ type: 'knock', name: myName, peerId: myId });
         });
 
-        conn.on('data', (msg) => {
+        guestKnockConnection.on('data', (msg) => {
           if (typeof msg === 'string') { try { msg = JSON.parse(msg); } catch (e) {} }
           
           if (msg.type === 'knock-response') {
             if (msg.status === 'accepted') {
-              // Accettato! Posso entrare e avviare il video
+              // L'Host ha accettato!
               document.getElementById('waitingScreen').style.display = 'none';
               document.getElementById('mainMeeting').style.display = 'flex';
               
-              dataConn = conn;
-              document.getElementById('myRoleBadge').textContent = 'Ospite';
-              showToast("L'organizzatore ti ha fatto entrare.", 'check_circle');
+              dataConn = guestKnockConnection; // La connessione di knock diventa quella ufficiale
+              remotePeerId = hostId;
+              
+              showToast("L'organizzatore ha accettato la tua richiesta.", 'check_circle');
               sendTelemetry();
 
-              // Chiamo l'Host in WebRTC Video
+              // Avvia la chiamata video verso l'Host
               const call = peer.call(hostId, localStream);
               setupMediaCall(call);
-            } else {
-              alert("L'organizzatore ha negato l'accesso.");
-              window.location.href = window.location.pathname; // Torna alla home
+
+            } else if (msg.status === 'rejected') {
+              alert("L'organizzatore ha negato l'accesso alla riunione.");
+              window.location.href = window.location.pathname;
             }
-          } else if (conn === dataConn) {
+          } 
+          else if (dataConn && guestKnockConnection === dataConn) {
             handleIncomingData(msg);
           }
         });
 
-        conn.on('close', () => {
-          if (conn === dataConn) {
-            showToast("Connessione persa con l'organizzatore", 'error');
+        guestKnockConnection.on('close', () => {
+          if (dataConn) {
+            showToast("L'organizzatore ha chiuso la stanza", 'error');
             removeRemoteVideoCell();
             dataConn = null;
           }
@@ -681,14 +695,14 @@
 
       peer.on('error', (err) => {
         if (err.type === 'peer-unavailable') {
-          alert("L'organizzatore non ha ancora aperto la stanza o il codice è errato.");
+          alert("L'organizzatore non ha ancora avviato la riunione o il codice non è corretto.");
           window.location.reload();
         }
       });
 
-      // Nel caso l'host richiami per ristabilire
+      // L'Ospite risponde anche se l'Host dovesse riavviare il video
       peer.on('call', (call) => {
-        if (dataConn) {
+        if (dataConn && call.peer === remotePeerId) {
           call.answer(localStream);
           setupMediaCall(call);
         }
@@ -697,7 +711,7 @@
 
 
     // ==========================================================================
-    // GESTIONE VIDEO (Comune)
+    // GESTIONE VIDEO E TELEMETRIA COMUNE
     // ==========================================================================
     function createRemoteVideoCell() {
       if(document.getElementById('remoteVideoCell')) return;
@@ -734,9 +748,6 @@
       });
     }
 
-    // ==========================================================================
-    // COMUNICAZIONE DATI
-    // ==========================================================================
     function sendData(payload) { if (dataConn && dataConn.open) dataConn.send(payload); }
 
     function sendTelemetry() {
@@ -756,11 +767,12 @@
         if(rCamOff) rCamOff.style.display = remoteCamIsOn ? 'none' : 'flex';
         if(rMicBadge) rMicBadge.style.display = remoteMicIsOn ? 'none' : 'flex';
 
-        document.getElementById('listNameRemote').textContent = rName;
+        document.getElementById('listNameRemote').textContent = rName + (isHost ? "" : " (Host)");
         document.getElementById('listAvatarRemote').textContent = rAv;
         
-        const hostMicIco = document.getElementById('hostCtrlMic'); hostMicIco.textContent = remoteMicIsOn ? 'mic' : 'mic_off'; hostMicIco.className = 'material-symbols-rounded action-icon ' + (remoteMicIsOn ? '' : 'danger');
-        const hostCamIco = document.getElementById('hostCtrlCam'); hostCamIco.textContent = remoteCamIsOn ? 'videocam' : 'videocam_off'; hostCamIco.className = 'material-symbols-rounded action-icon ' + (remoteCamIsOn ? '' : 'danger');
+        // Host controls
+        const hostMicIco = document.getElementById('hostCtrlMic'); if(hostMicIco) { hostMicIco.textContent = remoteMicIsOn ? 'mic' : 'mic_off'; hostMicIco.className = 'material-symbols-rounded action-icon ' + (remoteMicIsOn ? '' : 'danger'); }
+        const hostCamIco = document.getElementById('hostCtrlCam'); if(hostCamIco) { hostCamIco.textContent = remoteCamIsOn ? 'videocam' : 'videocam_off'; hostCamIco.className = 'material-symbols-rounded action-icon ' + (remoteCamIsOn ? '' : 'danger'); }
         
         if(msg.hand && !handRaisedRemoteFlag) { showToast(`${rName} ha alzato la mano`, 'front_hand'); handRaisedRemoteFlag = true; } 
         else if (!msg.hand) handRaisedRemoteFlag = false;
@@ -777,7 +789,8 @@
           } catch(e){}
         }
       } else if (msg.type === 'reaction') { showReaction(msg.emoji, false); } 
-      // LAVAGNA (Minimal impl. per non intasare)
+      
+      // LAVAGNA
       else if (msg.type === 'draw') { drawSegment(msg.x0, msg.y0, msg.x1, msg.y1, msg.color, msg.size, msg.tool); }
       else if (msg.type === 'clear') { clearBoard(false); }
       else if (msg.type === 'page-sync') { restoreCanvasFromDataUrl(msg.dataUrl, false); }
@@ -791,7 +804,7 @@
 
 
     // ==========================================================================
-    // INTERAZIONI MEETING
+    // INTERAZIONI MEETING E PANNELLI
     // ==========================================================================
     let handRaisedRemoteFlag = false;
     function toggleHand() { handRaised = !handRaised; document.getElementById('btnHand').classList.toggle('active', handRaised); sendTelemetry(); if(handRaised) showToast('Hai alzato la mano', 'front_hand'); }
@@ -822,28 +835,24 @@
       const qrBox = document.getElementById('qrcodeContainer'); qrBox.innerHTML = '';
       new QRCode(qrBox, { text: url, width: 100, height: 100, colorDark: '#202124', colorLight: '#ffffff' });
     }
-
     function togglePeopleModal() { document.getElementById('infoModal').classList.remove('open'); document.getElementById('peopleModal').classList.toggle('open'); }
     
-    // Controlli Host
-    function hostToggleRemoteMic() { if(!remoteMicIsOn) return; sendData({ type: 'cmd', action: 'set-mic', value: false }); showToast('Hai disattivato il microfono di un partecipante'); }
-    function hostToggleRemoteCam() { if(!remoteCamIsOn) return; sendData({ type: 'cmd', action: 'set-cam', value: false }); showToast('Hai disattivato il video di un partecipante'); }
+    function hostToggleRemoteMic() { if(!remoteMicIsOn || !isHost) return; sendData({ type: 'cmd', action: 'set-mic', value: false }); showToast('Hai disattivato il microfono dell\'ospite'); }
+    function hostToggleRemoteCam() { if(!remoteCamIsOn || !isHost) return; sendData({ type: 'cmd', action: 'set-cam', value: false }); showToast('Hai disattivato il video dell\'ospite'); }
 
     // Generazione del link SICURO per gli ospiti
     function getInviteUrl() {
       const code = document.getElementById('roomInput').value.trim().toUpperCase();
-      // NOTA BENE: Si aggiunge ?guest=true al link, così chi entra è forzatamente ospite e bussa!
       return `${window.location.origin}${window.location.pathname}?room=${encodeURIComponent(code)}&guest=true`;
     }
-    
     function copyInviteLink() {
       navigator.clipboard.writeText(getInviteUrl());
-      showToast('Link di invito copiato', 'link');
+      showToast('Link di invito (Ospite) copiato negli appunti', 'link');
     }
     function openInviteModalFromGR() { copyInviteLink(); }
 
     // ==========================================================================
-    // LAVAGNA (Minimal version per mantenere integrità file)
+    // LAVAGNA (Minimal)
     // ==========================================================================
     let isBoardOpen = false;
     function toggleBoard() {
